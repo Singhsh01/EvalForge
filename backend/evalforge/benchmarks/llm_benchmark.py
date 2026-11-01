@@ -40,7 +40,7 @@ PRODUCTS = ["valve kits", "sensor boards", "pump seals", "relay modules", "cable
 
 def extraction_cases(n: int = 40, seed: int = SEED) -> list[dict[str, Any]]:
     """Order notes with distractor numbers; ground truth comes from the generator."""
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # nosec B311 - reproducible test data, not security
     templates = [
         "Order #{oid}: {qty} {prod} for our {city} site, ship by {d}. (Ref. invoice {inv}.)",
         "Hi, please process order {oid}. We need {qty} {prod} delivered to {city} no later "
@@ -99,7 +99,7 @@ EXTRACTION_SCHEMA = {
 
 def arithmetic_cases(n: int = 30, seed: int = SEED) -> list[dict[str, Any]]:
     """Two-step word problems; the answer is computed, not written by hand."""
-    rng = random.Random(seed + 1)
+    rng = random.Random(seed + 1)  # nosec B311 - reproducible test data, not security
     out = []
     for i in range(n):
         a, b, c = rng.randint(20, 400), rng.randint(5, 90), rng.randint(2, 30)
@@ -135,7 +135,7 @@ def arithmetic_cases(n: int = 30, seed: int = SEED) -> list[dict[str, Any]]:
 
 def rag_suite(n_questions: int = 20, seed: int = SEED) -> tuple[list[dict], list[dict]]:
     """Fictional component facts (so no model knows them) with near-duplicate distractors."""
-    rng = random.Random(seed + 2)
+    rng = random.Random(seed + 2)  # nosec B311 - reproducible test data, not security
     names = [
         "Zephyr",
         "Halden",
