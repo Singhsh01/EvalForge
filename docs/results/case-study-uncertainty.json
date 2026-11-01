@@ -1,0 +1,73 @@
+{
+  "generated_at": "2026-11-01T21:32:46.641991+00:00",
+  "source": "make demo-enterprise on a fresh lite-profile database, then GET /api/registry/models",
+  "method": "percentile bootstrap, 1000 paired resamples of the candidate holdout rows",
+  "versions": [
+    {
+      "model": "breast-cancer-wisconsin",
+      "version": 3,
+      "f1": 0.949153,
+      "f1_ci95": [
+        0.907563,
+        0.986116
+      ],
+      "comparison": {
+        "champion_version": 1,
+        "evaluated_on_dataset_version": 2,
+        "candidate_f1": 0.949153,
+        "champion_f1": 0.921875,
+        "delta_f1": 0.027278,
+        "delta_f1_ci95": [
+          -0.019705,
+          0.083296
+        ],
+        "distinguishable": false,
+        "n_rows": 164
+      }
+    },
+    {
+      "model": "breast-cancer-wisconsin",
+      "version": 2,
+      "f1": 0.95,
+      "f1_ci95": [
+        0.892297,
+        0.989253
+      ],
+      "comparison": {
+        "champion_version": 1,
+        "evaluated_on_dataset_version": 1,
+        "candidate_f1": 0.95,
+        "champion_f1": 0.95122,
+        "delta_f1": -0.00122,
+        "delta_f1_ci95": [
+          -0.053882,
+          0.048811
+        ],
+        "distinguishable": false,
+        "n_rows": 114
+      }
+    },
+    {
+      "model": "breast-cancer-wisconsin",
+      "version": 1,
+      "f1": 0.95122,
+      "f1_ci95": [
+        0.902413,
+        0.989247
+      ],
+      "comparison": {
+        "champion_version": 2,
+        "evaluated_on_dataset_version": 1,
+        "candidate_f1": 0.95122,
+        "champion_f1": 0.95,
+        "delta_f1": 0.00122,
+        "delta_f1_ci95": [
+          -0.048811,
+          0.053882
+        ],
+        "distinguishable": false,
+        "n_rows": 114
+      }
+    }
+  ]
+}

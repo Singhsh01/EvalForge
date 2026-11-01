@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-01T16:20:39.643127+00:00",
+  "generated_at": "2026-11-01T21:32:00.079364+00:00",
   "case1": {
     "dataset": {
       "name": "breast-cancer-wisconsin",
@@ -8,7 +8,7 @@
       "rows": 569
     },
     "champion": {
-      "model_version_id": "fc7387c5a33b4ff5b44bae8c362b84bd",
+      "model_version_id": "60cc486b0a90412ba23b1b5d3299f0d7",
       "metrics": {
         "accuracy": 0.964912,
         "balanced_accuracy": 0.957341,
@@ -16,33 +16,35 @@
         "recall": 0.928571,
         "f1": 0.95122,
         "f1_weighted": 0.964725,
+        "f1_ci95_low": 0.902413,
+        "f1_ci95_high": 0.989247,
         "log_loss": 0.077265,
         "roc_auc": 0.996032,
         "train_accuracy": 0.986813,
         "train_f1": 0.982036,
         "cv_f1_macro_mean": 0.971707,
         "cv_f1_macro_std": 0.00566,
-        "latency_batch_ms_per_row": 0.030564,
-        "latency_single_p50_ms": 2.611374,
-        "latency_single_p95_ms": 3.268887,
-        "training_seconds": 0.0138,
+        "latency_batch_ms_per_row": 0.02192,
+        "latency_single_p50_ms": 2.525788,
+        "latency_single_p95_ms": 3.64562,
+        "training_seconds": 0.0086,
         "generalization_gap_f1": 0.030816
       },
-      "pipeline_run_id": "646f2d898de5401f8e8131d53431d401",
+      "pipeline_run_id": "b04a9c2303544f0ab7d97911370105f5",
       "lineage": {
-        "git_commit": "8af11c1010827bb7bc8e113835cd5a340e43398d",
+        "git_commit": "43c648163771ff0769b5bac097c70f8463405f74",
         "dataset": "breast-cancer-wisconsin",
         "dataset_version": 1,
         "dataset_sha256": "518936fa92ca3d8a78c420aee22030c4e519ffcba3be15dd23e83f2fc22e20e5",
-        "dataset_version_id": "ee6e34248f55403c982dd5fd3aee1996",
-        "run_id": "ac226a46aae84c5eaedf412231228051",
-        "mlflow_run_id": "c31fcd6e3b7a4d53b81ba75807dec34c",
-        "model_uri": "models:/m-f57a25b4ffbe4475b22005f887d7d5c8",
-        "model_version_id": "fc7387c5a33b4ff5b44bae8c362b84bd",
+        "dataset_version_id": "d33fe59f31154e06819c329423c75501",
+        "run_id": "84508350b08b4c1aac856412cdf1f21b",
+        "mlflow_run_id": "787c59117b7549968b69b2edf9e9b1f4",
+        "model_uri": "models:/m-5f7e0ccf5a6243a1a1db6ac08e37023c",
+        "model_version_id": "60cc486b0a90412ba23b1b5d3299f0d7",
         "name": "breast-cancer-wisconsin",
         "version": 1,
-        "deployment_id": "8e3c66f258054609ad415aed888269af",
-        "approval_id": "cdf699e8197f459bbd7fe457a03c1157"
+        "deployment_id": "8513ffccfa884669980507e15d382801",
+        "approval_id": "b37b088f0868478297fa61aff024791d"
       },
       "health": {
         "healthy": true,
@@ -52,15 +54,15 @@
           "latency_ok": true,
           "smoke_accuracy_ok": true
         },
-        "load_ms": 346.7,
-        "p95_ms": 4.194,
+        "load_ms": 0.01,
+        "p95_ms": 3.126,
         "smoke_accuracy": 0.96,
         "samples": 25,
-        "checked_at": "2026-11-01T16:20:47.991108+00:00"
+        "checked_at": "2026-11-01T21:32:04.770954+00:00"
       }
     },
     "challenger_pipeline": {
-      "id": "27a07eba840e4f359e9d13c0260844d2",
+      "id": "643483f9bb444de48bfda6b10044e97e",
       "status": "succeeded",
       "gate": {
         "passed": true,
@@ -75,7 +77,7 @@
             "id": "latency_p95",
             "passed": true,
             "blocking": true,
-            "detail": "single-row p95 5.0 ms (maximum 250.0 ms)"
+            "detail": "single-row p95 4.9 ms (maximum 250.0 ms)"
           },
           {
             "id": "overfitting",
@@ -93,11 +95,17 @@
             "id": "no_regression_vs_champion",
             "passed": true,
             "blocking": true,
-            "detail": "candidate F1 0.9500 vs champion v1 0.9512 on the same holdout (\u0394 -0.0012, tolerance 0.01)"
+            "detail": "candidate F1 0.9500 vs champion v1 0.9512 on the same holdout (\u0394 -0.0012, paired 95% CI [-0.0539, +0.0488], tolerance 0.01)"
+          },
+          {
+            "id": "difference_is_distinguishable",
+            "passed": false,
+            "blocking": false,
+            "detail": "\u0394F1 is within sampling noise on 114 holdout rows; the comparison cannot tell these models apart"
           }
         ],
         "champion_comparison": {
-          "champion_id": "fc7387c5a33b4ff5b44bae8c362b84bd",
+          "champion_id": "60cc486b0a90412ba23b1b5d3299f0d7",
           "champion_version": 1,
           "evaluated_on_dataset_version": 1,
           "champion_f1": 0.95122,
@@ -110,9 +118,26 @@
             "recall": 0.928571,
             "f1": 0.95122,
             "f1_weighted": 0.964725,
+            "f1_ci95_low": 0.902413,
+            "f1_ci95_high": 0.989247,
             "log_loss": 0.077265,
             "roc_auc": 0.996032
-          }
+          },
+          "delta_f1_ci95": [
+            -0.053882,
+            0.048811
+          ],
+          "candidate_f1_ci95": [
+            0.892297,
+            0.989253
+          ],
+          "champion_f1_ci95": [
+            0.902413,
+            0.989247
+          ],
+          "distinguishable": false,
+          "n_rows": 114,
+          "bootstrap_resamples": 1000
         }
       }
     },
@@ -136,9 +161,9 @@
       "worst_area",
       "area_error"
     ],
-    "window_started": "2026-11-01T16:21:11.116469+00:00",
+    "window_started": "2026-11-01T21:32:20.000198+00:00",
     "in_distribution_report": {
-      "id": "a6c8702c048f4d7190434eb1fed64ba3",
+      "id": "17611ce8f37e4e5fb80ddefebced5824",
       "summary": {
         "data_drift": false,
         "drift_share": 0.0,
@@ -153,7 +178,7 @@
       "f1": 0.981982
     },
     "drifted_report": {
-      "id": "7e54935e14074145ab6830a3df440d24",
+      "id": "b0c70fcd3ba6488ca50b1daf93888822",
       "summary": {
         "data_drift": false,
         "drift_share": 0.2333,
@@ -183,6 +208,8 @@
           "recall": 1.0,
           "f1": 0.868914,
           "f1_weighted": 0.884849,
+          "f1_ci95_low": 0.821123,
+          "f1_ci95_high": 0.908451,
           "log_loss": 0.256572,
           "roc_auc": 0.99822
         },
@@ -224,14 +251,14 @@
         }
       ]
     },
-    "incident_id": "5718eda55183488186e8cc43b8c1df84",
-    "copilot_session": "8855989c0df1431f8462b0e5c594d99a",
+    "incident_id": "e8a8d0a595844c23a95e5a1aec580b8f",
+    "copilot_session": "ee0eef3e05204ff0a48cbbc43d755386",
     "copilot_hypotheses": [
       {
         "hypothesis": "Covariate shift in worst_radius, worst_perimeter, mean_radius is degrading measured quality.",
         "confidence": "high",
         "evidence": [
-          "7e54935e14074145ab6830a3df440d24"
+          "b0c70fcd3ba6488ca50b1daf93888822"
         ]
       }
     ],
@@ -242,7 +269,7 @@
       ]
     },
     "retraining_pipeline": {
-      "id": "456208baeac34b85b9bb784acdb9ac6b",
+      "id": "3f35df4c5dfd4bd5a6e581d4193b59d9",
       "status": "awaiting_approval",
       "gate": {
         "passed": true,
@@ -257,7 +284,7 @@
             "id": "latency_p95",
             "passed": true,
             "blocking": true,
-            "detail": "single-row p95 2.6 ms (maximum 250.0 ms)"
+            "detail": "single-row p95 3.9 ms (maximum 250.0 ms)"
           },
           {
             "id": "overfitting",
@@ -275,11 +302,17 @@
             "id": "no_regression_vs_champion",
             "passed": true,
             "blocking": true,
-            "detail": "candidate F1 0.9492 vs champion v1 0.9219 on the same holdout (\u0394 +0.0273, tolerance 0.01)"
+            "detail": "candidate F1 0.9492 vs champion v1 0.9219 on the same holdout (\u0394 +0.0273, paired 95% CI [-0.0197, +0.0833], tolerance 0.01)"
+          },
+          {
+            "id": "difference_is_distinguishable",
+            "passed": false,
+            "blocking": false,
+            "detail": "\u0394F1 is within sampling noise on 164 holdout rows; the comparison cannot tell these models apart"
           }
         ],
         "champion_comparison": {
-          "champion_id": "fc7387c5a33b4ff5b44bae8c362b84bd",
+          "champion_id": "60cc486b0a90412ba23b1b5d3299f0d7",
           "champion_version": 1,
           "evaluated_on_dataset_version": 2,
           "champion_f1": 0.921875,
@@ -292,14 +325,31 @@
             "recall": 0.951613,
             "f1": 0.921875,
             "f1_weighted": 0.939367,
+            "f1_ci95_low": 0.870953,
+            "f1_ci95_high": 0.965517,
             "log_loss": 0.145542,
             "roc_auc": 0.989564
-          }
+          },
+          "delta_f1_ci95": [
+            -0.019705,
+            0.083296
+          ],
+          "candidate_f1_ci95": [
+            0.907563,
+            0.986116
+          ],
+          "champion_f1_ci95": [
+            0.870953,
+            0.965517
+          ],
+          "distinguishable": false,
+          "n_rows": 164,
+          "bootstrap_resamples": 1000
         }
       }
     },
     "after_release_report": {
-      "id": "3edd7660f9434601acc4cec04d9d8f30",
+      "id": "6582e958c58a46a3a2c936e6d9ed3598",
       "summary": {
         "data_drift": false,
         "drift_share": 0.2333,
@@ -329,6 +379,8 @@
           "recall": 0.984615,
           "f1": 0.992248,
           "f1_weighted": 0.993327,
+          "f1_ci95_low": 0.980237,
+          "f1_ci95_high": 1.0,
           "log_loss": 0.054393,
           "roc_auc": 0.997149
         },
@@ -341,7 +393,7 @@
     "suite": "copilot-investigations@v1",
     "cases": 5,
     "baseline": {
-      "run_id": "05d7976c5c314aaebba78c3e829d5ea5",
+      "run_id": "f92b5f0ee0554443a1746298e745adf6",
       "config": "copilot@v1",
       "summary": {
         "cases": 5,
@@ -354,8 +406,8 @@
           "agent_efficiency": 1.0
         },
         "latency_ms": {
-          "p50": 38.46,
-          "p95": 148.64
+          "p50": 17.54,
+          "p95": 28.17
         },
         "input_tokens": 0,
         "output_tokens": 0,
@@ -371,7 +423,7 @@
       }
     },
     "regressed": {
-      "run_id": "cb291c3899cd4b9688c46955eb0ddb0e",
+      "run_id": "1d25438a8aa14fdca6d67dcdedd24acd",
       "config": "copilot@v2",
       "summary": {
         "cases": 5,
@@ -384,8 +436,8 @@
           "agent_efficiency": 1.0
         },
         "latency_ms": {
-          "p50": 47.94,
-          "p95": 57.61
+          "p50": 14.54,
+          "p95": 19.87
         },
         "input_tokens": 0,
         "output_tokens": 0,
@@ -400,9 +452,9 @@
         "gates_passed": false
       },
       "regression": {
-        "baseline_run_id": "05d7976c5c314aaebba78c3e829d5ea5",
-        "baseline_subject": "agent:59a84e044fd4434c84a5fe94b6bbe817",
-        "current_subject": "agent:b813f14129ab429697af4767d04e2030",
+        "baseline_run_id": "f92b5f0ee0554443a1746298e745adf6",
+        "baseline_subject": "agent:3605fc58e3044138b1c03cabb97fb8c4",
+        "current_subject": "agent:efc3709dff354891967d3208416c5491",
         "tolerance": 0.05,
         "deltas": {
           "pass_rate": -0.4,
@@ -435,29 +487,29 @@
         "detected": true
       }
     },
-    "incident_id": "de807f9054c04dacba654e363ce81721",
-    "copilot_session": "2467d1f23fcb4d11b6b009bc06b13012",
+    "incident_id": "1706a21ff62f41f78210acfb11a3433c",
+    "copilot_session": "3092bababb274b0988ec1ca0abbf9369",
     "copilot_findings": [
       {
-        "claim": "Eval run cb291c38 (agent:b813f14129ab429697af4767d04e2030) pass rate 60% vs baseline 05d7976c (agent:59a84e044fd4434c84a5fe94b6bbe817) 100%; 2 case(s) newly failing: regression, dataset.",
+        "claim": "Eval run 1d25438a (agent:efc3709dff354891967d3208416c5491) pass rate 60% vs baseline f92b5f0e (agent:3605fc58e3044138b1c03cabb97fb8c4) 100%; 2 case(s) newly failing: regression, dataset.",
         "evidence": [
-          "cb291c3899cd4b9688c46955eb0ddb0e",
-          "05d7976c5c314aaebba78c3e829d5ea5"
+          "1d25438a8aa14fdca6d67dcdedd24acd",
+          "f92b5f0ee0554443a1746298e745adf6"
         ]
       },
       {
         "claim": "Failing cases did not call: diff_dataset_versions (2 cases)",
         "evidence": [
-          "cb291c3899cd4b9688c46955eb0ddb0e",
-          "d88cc0aaefd019357d1667973d55a22c",
-          "d88cc0aaefd019357d1667973d55a22c"
+          "1d25438a8aa14fdca6d67dcdedd24acd",
+          "ccc31474e7e5fc3aca29b0815d605850",
+          "ccc31474e7e5fc3aca29b0815d605850"
         ]
       },
       {
         "claim": "Config copilot@v1 \u2192 copilot@v2: tools removed ['diff_dataset_versions'], added [], other changes [].",
         "evidence": [
-          "59a84e044fd4434c84a5fe94b6bbe817",
-          "b813f14129ab429697af4767d04e2030"
+          "3605fc58e3044138b1c03cabb97fb8c4",
+          "efc3709dff354891967d3208416c5491"
         ]
       }
     ],
@@ -466,14 +518,14 @@
         "hypothesis": "Removing ['diff_dataset_versions'] in copilot@v2 caused the regression: every newly failing case needed it.",
         "confidence": "high",
         "evidence": [
-          "59a84e044fd4434c84a5fe94b6bbe817",
-          "b813f14129ab429697af4767d04e2030",
-          "cb291c3899cd4b9688c46955eb0ddb0e"
+          "3605fc58e3044138b1c03cabb97fb8c4",
+          "efc3709dff354891967d3208416c5491",
+          "1d25438a8aa14fdca6d67dcdedd24acd"
         ]
       }
     ],
     "fixed": {
-      "run_id": "e0072e6cfb8043e1866076929a03a3a7",
+      "run_id": "b91e650287a8425393a56bb504b8a3e2",
       "config": "copilot@v3",
       "summary": {
         "cases": 5,
@@ -486,8 +538,8 @@
           "agent_efficiency": 1.0
         },
         "latency_ms": {
-          "p50": 40.01,
-          "p95": 42.43
+          "p50": 15.74,
+          "p95": 29.06
         },
         "input_tokens": 0,
         "output_tokens": 0,
@@ -502,9 +554,9 @@
         "gates_passed": true
       },
       "regression": {
-        "baseline_run_id": "cb291c3899cd4b9688c46955eb0ddb0e",
-        "baseline_subject": "agent:b813f14129ab429697af4767d04e2030",
-        "current_subject": "agent:1c4e688e00ce4a7aa5cbce515b1783bf",
+        "baseline_run_id": "1d25438a8aa14fdca6d67dcdedd24acd",
+        "baseline_subject": "agent:efc3709dff354891967d3208416c5491",
+        "current_subject": "agent:97ed5a53b7b14203aed5a7a6178d874b",
         "tolerance": 0.05,
         "deltas": {
           "pass_rate": 0.4,

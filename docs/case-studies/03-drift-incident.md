@@ -42,7 +42,10 @@ that includes recent labelled data.
    executor started the continuous-training pipeline (`trigger: incident`).
 4. **Gate vs. the deployed baseline on the same holdout (v2):** candidate F1 0.949 vs champion
    v1 re-scored at **0.922** (Δ +0.027) → passed; staging deploy healthy; promotion and
-   production release each required approval.
+   production release each required approval. **This comparison alone does not prove an
+   improvement:** the paired bootstrap 95% interval for Δ is **[−0.020, +0.083]** on 164
+   holdout rows, which includes 0. The evidence for the retraining is the post-release
+   measurement below, on traffic from the new regime.
 
 ## Verification after release
 300 new post-recalibration requests with labels, scored against the new model's own reference:
@@ -57,6 +60,9 @@ detected → investigation → findings → retraining requested → approved/pi
 resolved — is stored on the incident and in the audit log.
 
 ## Caveats
+* The gate comparison above is not statistically significant (interval includes 0); the
+  conclusion rests on the 300-sample post-release measurement, which is itself one sample of
+  a simulated regime.
 * The new model's reference includes both measurement regimes, so the seven features still
   differ from *pure* recalibrated traffic (share 23 %); with performance confirmed stable and no
   prediction drift, the verdict is `no_drift` by design. A team might instead set per-feature

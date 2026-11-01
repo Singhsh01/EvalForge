@@ -27,14 +27,20 @@ quality, and reversible — without one person being able to push a change alone
 
 3. **Approvals.** The approver accepted the promotion (MLflow alias `champion` → v1) and then
    the production deployment. The release health check loaded the model from MLflow
-   (347 ms cold), predicted 25 holdout rows (smoke accuracy 0.96, p95 4.2 ms) and passed.
+   (skops-only, digest-verified), predicted 25 holdout rows (smoke accuracy 0.96, p95 ≈ 3 ms)
+   and passed.
 4. **Challenger.** A gradient-boosting pipeline produced v2. The gate re-scored the champion on
    the same holdout: candidate F1 0.950 vs champion 0.951 (Δ −0.001, within the 0.01 tolerance),
-   so it passed and was promoted for a **25 % canary**.
+   so it passed and was promoted for a **25 % canary**. The paired bootstrap interval for the
+   difference is **[−0.054, +0.049]** on 114 holdout rows: the two models are statistically
+   indistinguishable, and the gate now says so in an advisory check
+   (`difference_is_distinguishable: false`). See
+   [case-study-uncertainty.json](../results/case-study-uncertainty.json).
 5. **Canary.** 400 requests with distinct request ids were routed by a deterministic hash:
    **101 to the canary, 299 to stable** (25.3 %). Every prediction was logged with its
    deployment id.
-6. **Rollback.** Because the challenger brought no measurable gain at higher latency, the
+6. **Rollback.** Because the challenger brought no measurable gain (see the interval above) at
+   higher latency, the
    engineer requested a rollback; the approver accepted; the canary ended as `rolled_back`
    and 100 % of traffic returned to v1. v1 was re-promoted as champion.
 
