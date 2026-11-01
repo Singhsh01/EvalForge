@@ -10,13 +10,15 @@ const p = await ctx.newPage();
 // visible cursor + click ripple
 await ctx.addInitScript(() => {
   addEventListener("DOMContentLoaded", () => {
+    // Standard arrow pointer (white fill, dark outline); the tip sits exactly on the mouse position.
     const c = document.createElement("div");
-    c.style.cssText = "position:fixed;z-index:99999;left:0;top:0;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 0 0 3px rgba(245,176,76,.55),0 2px 10px rgba(0,0,0,.5);pointer-events:none;transition:transform .12s;";
+    c.innerHTML = '<svg width="22" height="30" viewBox="0 0 22 30" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 1.5 L1.5 24 L7.2 18.6 L11 27.5 L14.6 26 L10.9 17.2 L18.5 17.2 Z" fill="#fff" stroke="#111" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+    c.style.cssText = "position:fixed;z-index:99999;left:0;top:0;width:22px;height:30px;pointer-events:none;transform-origin:2px 2px;transition:transform .1s;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));";
     const x = sessionStorage.getItem("cx"), y = sessionStorage.getItem("cy");
     if (x) { c.style.left = x + "px"; c.style.top = y + "px"; }
     document.body.appendChild(c);
     addEventListener("mousemove", (e) => { c.style.left = e.clientX + "px"; c.style.top = e.clientY + "px"; sessionStorage.setItem("cx", e.clientX); sessionStorage.setItem("cy", e.clientY); }, true);
-    addEventListener("mousedown", () => { c.style.transform = "scale(.7)"; }, true);
+    addEventListener("mousedown", () => { c.style.transform = "scale(.85)"; }, true);
     addEventListener("mouseup", () => { c.style.transform = "scale(1)"; }, true);
   });
 });
