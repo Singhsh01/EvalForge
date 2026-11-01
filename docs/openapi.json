@@ -1,0 +1,1884 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "EvalForge API",
+        "description": "AI evaluation, MLOps and LLMOps control plane.",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/health": {
+            "get": {
+                "tags": [
+                    "system"
+                ],
+                "summary": "Health",
+                "operationId": "health_api_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    },
+                                    "type": "object",
+                                    "title": "Response Health Api Health Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/health/ready": {
+            "get": {
+                "tags": [
+                    "system"
+                ],
+                "summary": "Ready",
+                "operationId": "ready_api_health_ready_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": true,
+                                    "type": "object",
+                                    "title": "Response Ready Api Health Ready Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/meta": {
+            "get": {
+                "tags": [
+                    "system"
+                ],
+                "summary": "Meta",
+                "operationId": "meta_api_meta_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": true,
+                                    "type": "object",
+                                    "title": "Response Meta Api Meta Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/overview": {
+            "get": {
+                "tags": [
+                    "system"
+                ],
+                "summary": "Overview",
+                "description": "Aggregates computed from persisted records only \u2014 empty when nothing has run.",
+                "operationId": "overview_api_overview_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": true,
+                                    "type": "object",
+                                    "title": "Response Overview Api Overview Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/demo/breast-cancer": {
+            "post": {
+                "tags": [
+                    "system"
+                ],
+                "summary": "Load Demo",
+                "description": "Register the UCI Breast Cancer Wisconsin (Diagnostic) dataset bundled with scikit-learn.\n\nPublic dataset (569 rows, 30 numeric features; CC BY 4.0). Loaded from the\nscikit-learn package, so no network access is needed.",
+                "operationId": "load_demo_api_demo_breast_cancer_post",
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": true,
+                                    "type": "object",
+                                    "title": "Response Load Demo Api Demo Breast Cancer Post"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/datasets": {
+            "get": {
+                "tags": [
+                    "datasets"
+                ],
+                "summary": "List Datasets",
+                "operationId": "list_datasets_api_datasets_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/DatasetOut"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List Datasets Api Datasets Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "datasets"
+                ],
+                "summary": "Create Dataset",
+                "operationId": "create_dataset_api_datasets_post",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_create_dataset_api_datasets_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DatasetOut"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/datasets/{dataset_id}": {
+            "get": {
+                "tags": [
+                    "datasets"
+                ],
+                "summary": "Get Dataset",
+                "operationId": "get_dataset_api_datasets__dataset_id__get",
+                "parameters": [
+                    {
+                        "name": "dataset_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Dataset Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DatasetOut"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/datasets/{dataset_id}/versions": {
+            "post": {
+                "tags": [
+                    "datasets"
+                ],
+                "summary": "Add Version",
+                "operationId": "add_version_api_datasets__dataset_id__versions_post",
+                "parameters": [
+                    {
+                        "name": "dataset_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Dataset Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_add_version_api_datasets__dataset_id__versions_post"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DatasetVersionDetail"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/datasets/{dataset_id}/versions/{version}": {
+            "get": {
+                "tags": [
+                    "datasets"
+                ],
+                "summary": "Get Version",
+                "operationId": "get_version_api_datasets__dataset_id__versions__version__get",
+                "parameters": [
+                    {
+                        "name": "dataset_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Dataset Id"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DatasetVersionDetail"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/datasets/{dataset_id}/versions/{version}/preview": {
+            "get": {
+                "tags": [
+                    "datasets"
+                ],
+                "summary": "Preview",
+                "operationId": "preview_api_datasets__dataset_id__versions__version__preview_get",
+                "parameters": [
+                    {
+                        "name": "dataset_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Dataset Id"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "Version"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 500,
+                            "minimum": 1,
+                            "default": 50,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true,
+                                    "title": "Response Preview Api Datasets  Dataset Id  Versions  Version  Preview Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/runs": {
+            "post": {
+                "tags": [
+                    "experiments"
+                ],
+                "summary": "Launch Run",
+                "operationId": "launch_run_api_runs_post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TrainRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LaunchResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "experiments"
+                ],
+                "summary": "List Runs",
+                "operationId": "list_runs_api_runs_get",
+                "parameters": [
+                    {
+                        "name": "dataset_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Dataset Id"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/JobStatus"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Status"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 500,
+                            "minimum": 1,
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RunOut"
+                                    },
+                                    "title": "Response List Runs Api Runs Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/runs/compare": {
+            "get": {
+                "tags": [
+                    "experiments"
+                ],
+                "summary": "Compare Runs",
+                "operationId": "compare_runs_api_runs_compare_get",
+                "parameters": [
+                    {
+                        "name": "ids",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "Comma-separated run ids (2\u20138)",
+                            "title": "Ids"
+                        },
+                        "description": "Comma-separated run ids (2\u20138)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CompareOut"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/runs/{run_id}": {
+            "get": {
+                "tags": [
+                    "experiments"
+                ],
+                "summary": "Get Run",
+                "operationId": "get_run_api_runs__run_id__get",
+                "parameters": [
+                    {
+                        "name": "run_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Run Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RunDetail"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/runs/{run_id}/evaluations": {
+            "post": {
+                "tags": [
+                    "experiments"
+                ],
+                "summary": "Launch Evaluation",
+                "operationId": "launch_evaluation_api_runs__run_id__evaluations_post",
+                "parameters": [
+                    {
+                        "name": "run_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Run Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EvaluateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LaunchResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "experiments"
+                ],
+                "summary": "List Evaluations",
+                "operationId": "list_evaluations_api_runs__run_id__evaluations_get",
+                "parameters": [
+                    {
+                        "name": "run_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Run Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EvaluationOut"
+                                    },
+                                    "title": "Response List Evaluations Api Runs  Run Id  Evaluations Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/jobs/{job_id}": {
+            "get": {
+                "tags": [
+                    "experiments"
+                ],
+                "summary": "Get Job",
+                "operationId": "get_job_api_jobs__job_id__get",
+                "parameters": [
+                    {
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Job Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/JobOut"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Body_add_version_api_datasets__dataset_id__versions_post": {
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "contentMediaType": "application/octet-stream",
+                        "title": "File"
+                    },
+                    "note": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "title": "Note",
+                        "default": ""
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file"
+                ],
+                "title": "Body_add_version_api_datasets__dataset_id__versions_post"
+            },
+            "Body_create_dataset_api_datasets_post": {
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "contentMediaType": "application/octet-stream",
+                        "title": "File",
+                        "description": "CSV, JSON array or JSON Lines"
+                    },
+                    "name": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.\\- ]{1,63}$",
+                        "title": "Name"
+                    },
+                    "target_column": {
+                        "type": "string",
+                        "maxLength": 256,
+                        "minLength": 1,
+                        "title": "Target Column"
+                    },
+                    "description": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "title": "Description",
+                        "default": ""
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file",
+                    "name",
+                    "target_column"
+                ],
+                "title": "Body_create_dataset_api_datasets_post"
+            },
+            "CompareOut": {
+                "properties": {
+                    "runs": {
+                        "items": {
+                            "$ref": "#/components/schemas/RunOut"
+                        },
+                        "type": "array",
+                        "title": "Runs"
+                    },
+                    "metric_keys": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Metric Keys"
+                    },
+                    "param_keys": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Param Keys"
+                    },
+                    "differing_params": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Differing Params"
+                    },
+                    "same_holdout": {
+                        "type": "boolean",
+                        "title": "Same Holdout"
+                    },
+                    "best": {
+                        "additionalProperties": {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        "type": "object",
+                        "title": "Best"
+                    },
+                    "warnings": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Warnings"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "runs",
+                    "metric_keys",
+                    "param_keys",
+                    "differing_params",
+                    "same_holdout",
+                    "best",
+                    "warnings"
+                ],
+                "title": "CompareOut"
+            },
+            "DatasetOut": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description"
+                    },
+                    "target_column": {
+                        "type": "string",
+                        "title": "Target Column"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "versions": {
+                        "items": {
+                            "$ref": "#/components/schemas/DatasetVersionSummary"
+                        },
+                        "type": "array",
+                        "title": "Versions"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "target_column",
+                    "created_at",
+                    "versions"
+                ],
+                "title": "DatasetOut"
+            },
+            "DatasetVersionDetail": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "title": "Version"
+                    },
+                    "sha256": {
+                        "type": "string",
+                        "title": "Sha256"
+                    },
+                    "source_filename": {
+                        "type": "string",
+                        "title": "Source Filename"
+                    },
+                    "file_format": {
+                        "type": "string",
+                        "title": "File Format"
+                    },
+                    "size_bytes": {
+                        "type": "integer",
+                        "title": "Size Bytes"
+                    },
+                    "n_rows": {
+                        "type": "integer",
+                        "title": "N Rows"
+                    },
+                    "n_columns": {
+                        "type": "integer",
+                        "title": "N Columns"
+                    },
+                    "task_type": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Task Type"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "note": {
+                        "type": "string",
+                        "title": "Note"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "checks_failed": {
+                        "type": "integer",
+                        "title": "Checks Failed",
+                        "default": 0
+                    },
+                    "checks_warned": {
+                        "type": "integer",
+                        "title": "Checks Warned",
+                        "default": 0
+                    },
+                    "dataset_id": {
+                        "type": "string",
+                        "title": "Dataset Id"
+                    },
+                    "schema": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Schema"
+                    },
+                    "profile": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Profile"
+                    },
+                    "quality_checks": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Quality Checks"
+                    },
+                    "split": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Split"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "version",
+                    "sha256",
+                    "source_filename",
+                    "file_format",
+                    "size_bytes",
+                    "n_rows",
+                    "n_columns",
+                    "task_type",
+                    "status",
+                    "note",
+                    "created_at",
+                    "dataset_id",
+                    "schema",
+                    "profile",
+                    "quality_checks",
+                    "split"
+                ],
+                "title": "DatasetVersionDetail"
+            },
+            "DatasetVersionSummary": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "title": "Version"
+                    },
+                    "sha256": {
+                        "type": "string",
+                        "title": "Sha256"
+                    },
+                    "source_filename": {
+                        "type": "string",
+                        "title": "Source Filename"
+                    },
+                    "file_format": {
+                        "type": "string",
+                        "title": "File Format"
+                    },
+                    "size_bytes": {
+                        "type": "integer",
+                        "title": "Size Bytes"
+                    },
+                    "n_rows": {
+                        "type": "integer",
+                        "title": "N Rows"
+                    },
+                    "n_columns": {
+                        "type": "integer",
+                        "title": "N Columns"
+                    },
+                    "task_type": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Task Type"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "note": {
+                        "type": "string",
+                        "title": "Note"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "checks_failed": {
+                        "type": "integer",
+                        "title": "Checks Failed",
+                        "default": 0
+                    },
+                    "checks_warned": {
+                        "type": "integer",
+                        "title": "Checks Warned",
+                        "default": 0
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "version",
+                    "sha256",
+                    "source_filename",
+                    "file_format",
+                    "size_bytes",
+                    "n_rows",
+                    "n_columns",
+                    "task_type",
+                    "status",
+                    "note",
+                    "created_at"
+                ],
+                "title": "DatasetVersionSummary"
+            },
+            "EvaluateRequest": {
+                "properties": {
+                    "dataset_version_id": {
+                        "type": "string",
+                        "title": "Dataset Version Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "dataset_version_id"
+                ],
+                "title": "EvaluateRequest"
+            },
+            "EvaluationOut": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "run_id": {
+                        "type": "string",
+                        "title": "Run Id"
+                    },
+                    "dataset_version_id": {
+                        "type": "string",
+                        "title": "Dataset Version Id"
+                    },
+                    "job_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Job Id"
+                    },
+                    "split": {
+                        "type": "string",
+                        "title": "Split"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "metrics": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": {
+                                    "type": "number"
+                                },
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metrics"
+                    },
+                    "report": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Report"
+                    },
+                    "error": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "run_id",
+                    "dataset_version_id",
+                    "job_id",
+                    "split",
+                    "status",
+                    "metrics",
+                    "report",
+                    "error",
+                    "created_at"
+                ],
+                "title": "EvaluationOut"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "JobOut": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "stage": {
+                        "type": "string",
+                        "title": "Stage"
+                    },
+                    "progress": {
+                        "type": "number",
+                        "title": "Progress"
+                    },
+                    "error": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error"
+                    },
+                    "logs": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Logs"
+                    },
+                    "result": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Result"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "started_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Started At"
+                    },
+                    "finished_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Finished At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "kind",
+                    "status",
+                    "stage",
+                    "progress",
+                    "error",
+                    "logs",
+                    "result",
+                    "created_at",
+                    "started_at",
+                    "finished_at"
+                ],
+                "title": "JobOut"
+            },
+            "JobStatus": {
+                "type": "string",
+                "enum": [
+                    "queued",
+                    "running",
+                    "succeeded",
+                    "failed"
+                ],
+                "title": "JobStatus"
+            },
+            "LaunchResponse": {
+                "properties": {
+                    "job": {
+                        "$ref": "#/components/schemas/JobOut"
+                    },
+                    "run": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/RunOut"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "evaluation": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EvaluationOut"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "job"
+                ],
+                "title": "LaunchResponse"
+            },
+            "RunDetail": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "job_id": {
+                        "type": "string",
+                        "title": "Job Id"
+                    },
+                    "dataset_version_id": {
+                        "type": "string",
+                        "title": "Dataset Version Id"
+                    },
+                    "dataset_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Dataset Name"
+                    },
+                    "dataset_version_number": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Dataset Version Number"
+                    },
+                    "algorithm": {
+                        "type": "string",
+                        "title": "Algorithm"
+                    },
+                    "hyperparameters": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Hyperparameters"
+                    },
+                    "seed": {
+                        "type": "integer",
+                        "title": "Seed"
+                    },
+                    "cv_folds": {
+                        "type": "integer",
+                        "title": "Cv Folds"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "metrics": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": {
+                                    "type": "number"
+                                },
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metrics"
+                    },
+                    "mlflow_experiment_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Mlflow Experiment Id"
+                    },
+                    "mlflow_run_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Mlflow Run Id"
+                    },
+                    "model_uri": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Model Uri"
+                    },
+                    "training_seconds": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Training Seconds"
+                    },
+                    "git_commit": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Git Commit"
+                    },
+                    "error": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "finished_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Finished At"
+                    },
+                    "report": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Report"
+                    },
+                    "environment": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Environment"
+                    },
+                    "feature_columns": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Feature Columns"
+                    },
+                    "dropped_columns": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    },
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Dropped Columns"
+                    },
+                    "job": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/JobOut"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "job_id",
+                    "dataset_version_id",
+                    "algorithm",
+                    "hyperparameters",
+                    "seed",
+                    "cv_folds",
+                    "status",
+                    "metrics",
+                    "mlflow_experiment_id",
+                    "mlflow_run_id",
+                    "model_uri",
+                    "training_seconds",
+                    "git_commit",
+                    "error",
+                    "created_at",
+                    "finished_at",
+                    "report",
+                    "environment",
+                    "feature_columns",
+                    "dropped_columns"
+                ],
+                "title": "RunDetail"
+            },
+            "RunOut": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "job_id": {
+                        "type": "string",
+                        "title": "Job Id"
+                    },
+                    "dataset_version_id": {
+                        "type": "string",
+                        "title": "Dataset Version Id"
+                    },
+                    "dataset_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Dataset Name"
+                    },
+                    "dataset_version_number": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Dataset Version Number"
+                    },
+                    "algorithm": {
+                        "type": "string",
+                        "title": "Algorithm"
+                    },
+                    "hyperparameters": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Hyperparameters"
+                    },
+                    "seed": {
+                        "type": "integer",
+                        "title": "Seed"
+                    },
+                    "cv_folds": {
+                        "type": "integer",
+                        "title": "Cv Folds"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "metrics": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": {
+                                    "type": "number"
+                                },
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Metrics"
+                    },
+                    "mlflow_experiment_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Mlflow Experiment Id"
+                    },
+                    "mlflow_run_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Mlflow Run Id"
+                    },
+                    "model_uri": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Model Uri"
+                    },
+                    "training_seconds": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Training Seconds"
+                    },
+                    "git_commit": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Git Commit"
+                    },
+                    "error": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "finished_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Finished At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "job_id",
+                    "dataset_version_id",
+                    "algorithm",
+                    "hyperparameters",
+                    "seed",
+                    "cv_folds",
+                    "status",
+                    "metrics",
+                    "mlflow_experiment_id",
+                    "mlflow_run_id",
+                    "model_uri",
+                    "training_seconds",
+                    "git_commit",
+                    "error",
+                    "created_at",
+                    "finished_at"
+                ],
+                "title": "RunOut"
+            },
+            "TrainRequest": {
+                "properties": {
+                    "dataset_version_id": {
+                        "type": "string",
+                        "title": "Dataset Version Id"
+                    },
+                    "algorithm": {
+                        "type": "string",
+                        "title": "Algorithm"
+                    },
+                    "hyperparameters": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Hyperparameters"
+                    },
+                    "seed": {
+                        "type": "integer",
+                        "maximum": 2147483647.0,
+                        "minimum": 0.0,
+                        "title": "Seed",
+                        "default": 42
+                    },
+                    "cv_folds": {
+                        "type": "integer",
+                        "maximum": 10.0,
+                        "minimum": 0.0,
+                        "title": "Cv Folds",
+                        "description": "0 disables cross-validation",
+                        "default": 0
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "dataset_version_id",
+                    "algorithm"
+                ],
+                "title": "TrainRequest"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    },
+                    "input": {
+                        "title": "Input"
+                    },
+                    "ctx": {
+                        "type": "object",
+                        "title": "Context"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}

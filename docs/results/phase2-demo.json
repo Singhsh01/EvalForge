@@ -1,0 +1,155 @@
+{
+  "generated_at": "2026-11-01T13:02:00.074454+00:00",
+  "host": {
+    "python": "3.12.13",
+    "machine": "x86_64",
+    "system": "Linux"
+  },
+  "platform": {
+    "version": "0.1.0",
+    "executor": "rq",
+    "database": "postgresql+psycopg"
+  },
+  "dataset": {
+    "name": "breast-cancer-wisconsin",
+    "version": 1,
+    "sha256": "518936fa92ca3d8a78c420aee22030c4e519ffcba3be15dd23e83f2fc22e20e5",
+    "rows": 569
+  },
+  "positive_label": "malignant",
+  "holdout_rows": 114,
+  "runs": [
+    {
+      "algorithm": "logistic_regression",
+      "hyperparameters": {
+        "C": 1.0,
+        "max_iter": 2000,
+        "class_weight": null
+      },
+      "mlflow_run_id": "ff6118d659014a0dac15475e52bfe152",
+      "metrics": {
+        "accuracy": 0.964912,
+        "balanced_accuracy": 0.957341,
+        "precision": 0.975,
+        "recall": 0.928571,
+        "f1": 0.95122,
+        "f1_weighted": 0.964725,
+        "log_loss": 0.077265,
+        "roc_auc": 0.996032,
+        "train_accuracy": 0.986813,
+        "train_f1": 0.982036,
+        "cv_f1_macro_mean": 0.971707,
+        "cv_f1_macro_std": 0.00566,
+        "latency_batch_ms_per_row": 0.022785,
+        "latency_single_p50_ms": 2.399729,
+        "latency_single_p95_ms": 2.616097,
+        "training_seconds": 0.0093,
+        "generalization_gap_f1": 0.030816
+      }
+    },
+    {
+      "algorithm": "random_forest",
+      "hyperparameters": {
+        "n_estimators": 300,
+        "max_depth": null,
+        "min_samples_leaf": 2,
+        "max_features": "sqrt",
+        "class_weight": null
+      },
+      "mlflow_run_id": "d32e03e92c2e4875b389014fe215f7be",
+      "metrics": {
+        "accuracy": 0.973684,
+        "balanced_accuracy": 0.964286,
+        "precision": 1.0,
+        "recall": 0.928571,
+        "f1": 0.962963,
+        "f1_weighted": 0.973465,
+        "log_loss": 0.114782,
+        "roc_auc": 0.994048,
+        "train_accuracy": 0.993407,
+        "train_f1": 0.991098,
+        "cv_f1_macro_mean": 0.950284,
+        "cv_f1_macro_std": 0.023437,
+        "latency_batch_ms_per_row": 0.161027,
+        "latency_single_p50_ms": 16.235153,
+        "latency_single_p95_ms": 19.124341,
+        "training_seconds": 0.4245,
+        "generalization_gap_f1": 0.028135
+      }
+    },
+    {
+      "algorithm": "gradient_boosting",
+      "hyperparameters": {
+        "learning_rate": 0.05,
+        "max_iter": 300,
+        "max_depth": null,
+        "max_leaf_nodes": 15,
+        "l2_regularization": 0.0
+      },
+      "mlflow_run_id": "09bd94a8e71f4790a7ee8de339b643f9",
+      "metrics": {
+        "accuracy": 0.964912,
+        "balanced_accuracy": 0.952381,
+        "precision": 1.0,
+        "recall": 0.904762,
+        "f1": 0.95,
+        "f1_weighted": 0.964509,
+        "log_loss": 0.106814,
+        "roc_auc": 0.996032,
+        "train_accuracy": 1.0,
+        "train_f1": 1.0,
+        "cv_f1_macro_mean": 0.959669,
+        "cv_f1_macro_std": 0.022352,
+        "latency_batch_ms_per_row": 0.047115,
+        "latency_single_p50_ms": 4.247931,
+        "latency_single_p95_ms": 4.423736,
+        "training_seconds": 0.3237,
+        "generalization_gap_f1": 0.05
+      }
+    }
+  ],
+  "best": {
+    "accuracy": [
+      "random_forest"
+    ],
+    "balanced_accuracy": [
+      "random_forest"
+    ],
+    "cv_f1_macro_mean": [
+      "logistic_regression"
+    ],
+    "f1": [
+      "random_forest"
+    ],
+    "f1_weighted": [
+      "random_forest"
+    ],
+    "latency_batch_ms_per_row": [
+      "logistic_regression"
+    ],
+    "latency_single_p50_ms": [
+      "logistic_regression"
+    ],
+    "latency_single_p95_ms": [
+      "logistic_regression"
+    ],
+    "log_loss": [
+      "logistic_regression"
+    ],
+    "precision": [
+      "random_forest",
+      "gradient_boosting"
+    ],
+    "recall": [
+      "logistic_regression",
+      "random_forest"
+    ],
+    "roc_auc": [
+      "logistic_regression",
+      "gradient_boosting"
+    ],
+    "training_seconds": [
+      "logistic_regression"
+    ]
+  }
+}

@@ -1,0 +1,95 @@
+# EvalForge — container profile.
+#
+#   docker compose up --build            # postgres, redis, mlflow, api, worker, web
+#
+# Memory budget (8 GB MacBook Air): limits below sum to ~2.3 GB.
+# Nothing here needs a GPU or Kubernetes. For the lighter no-Docker profile see
+# `make dev` in the Makefile (SQLite + embedded MLflow + in-process jobs).
+name: evalforge
+
+x-backend-env: &backend-env
+  EVALFORGE_DATABASE_URL: postgresql+psycopg://evalforge:${POSTGRES_PASSWORD:-evalforge}@postgres:5432/evalforge
+  EVALFORGE_MLFLOW_TRACKING_URI: http://mlflow:5000
+  EVALFORGE_EXECUTOR: rq
+  EVALFORGE_REDIS_URL: redis://redis:6379/0
+  EVALFORGE_DATA_DIR: /data
+  EVALFORGE_CORS_ORIGINS: '["http://localhost:3000"]'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: evalforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-evalforge}
+      POSTGRES_DB: evalforge
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evalforge"]
+      interval: 5s
+      retries: 10
+    mem_limit: 384m
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "96mb"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+    mem_limit: 128m
+
+  mlflow:
+    build: ./backend          # reuses the backend image, which already ships MLflow
+    command: >
+      mlflow server --host 0.0.0.0 --port 5000 --workers 1
+      --backend-store-uri postgresql+psycopg://evalforge:${POSTGRES_PASSWORD:-evalforge}@postgres:5432/mlflow
+      --artifacts-destination /mlartifacts --serve-artifacts
+      --allowed-hosts "mlflow:5000,localhost:5000,127.0.0.1:5000"
+    volumes:
+      - mlartifacts:/mlartifacts
+    ports: ["127.0.0.1:5000:5000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:5000/health')"]
+      interval: 10s
+      retries: 12
+    user: root
+    mem_limit: 768m
+
+  api:
+    build:
+      context: ./backend
+      args: { GIT_COMMIT: "${GIT_COMMIT:-unknown}" }
+    environment: *backend-env
+    volumes: [evaldata:/data]
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      mlflow: { condition: service_healthy }
+    mem_limit: 512m
+
+  worker:
+    build: ./backend
+    command: ["python", "-m", "evalforge.worker"]
+    environment: *backend-env
+    volumes: [evaldata:/data]
+    depends_on:
+      api: { condition: service_healthy }
+    mem_limit: 1g
+
+  web:
+    build: ./frontend
+    environment:
+      EVALFORGE_API_URL: http://api:8000
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+    mem_limit: 256m
+
+volumes:
+  pgdata:
+  mlartifacts:
+  evaldata:
