@@ -338,7 +338,8 @@ def predict(
     version: int | None = None,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    rid = request.headers.get("x-request-id") or uuid.uuid4().hex
+    # sanitised by the request middleware (canary routing hashes it; logs store it)
+    rid = getattr(request.state, "request_id", None) or uuid.uuid4().hex
     try:
         out = serving.predict(db, model_name, environment, body.instances, rid, version)
         db.commit()

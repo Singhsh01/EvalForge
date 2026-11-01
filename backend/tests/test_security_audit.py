@@ -266,3 +266,18 @@ def test_copilot_cannot_spoof_requester(client, monkeypatch):
     with scope() as db:
         make(db).call("request_evaluation", suite_id="x", subject="{}", requested_by="approver")
     assert seen["requested_by"] == "a-engineer"
+
+
+def test_request_id_header_cannot_forge_logs_or_overflow_storage(client, caplog):
+    """SEC-07: X-Request-ID flowed unchecked into logs, spans and a VARCHAR(64) column."""
+    import logging
+
+    caplog.set_level(logging.INFO, logger="evalforge")
+    evil = "abc\nINFO evalforge POST /api/approvals 200 forged=1"
+    r = client.get("/api/health", headers={"x-request-id": evil})
+    assert r.headers["x-request-id"] != evil and "\n" not in r.headers["x-request-id"]
+    assert not any("forged=1" in rec.getMessage() for rec in caplog.records)
+    ok = client.get("/api/health", headers={"x-request-id": "trace-123_abc"})
+    assert ok.headers["x-request-id"] == "trace-123_abc"  # well-formed ids are preserved
+    long = client.get("/api/health", headers={"x-request-id": "a" * 300})
+    assert len(long.headers["x-request-id"]) <= 64

@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
+import re
 import threading
 import time
 import uuid
@@ -40,6 +41,7 @@ from evalforge.services.tracking import UnsafeModelArtifact
 
 os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+_SAFE_RID = re.compile(r"[A-Za-z0-9._:-]{1,64}")
 log = logging.getLogger("evalforge")
 
 
@@ -93,7 +95,11 @@ def create_app() -> FastAPI:
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):  # type: ignore[no-untyped-def]
-        rid = request.headers.get("x-request-id") or uuid.uuid4().hex[:16]
+        # Client-supplied ids end up in logs and traces: accept only a safe token, otherwise
+        # mint one (audit SEC-07: CR/LF in the header forged log lines).
+        supplied = request.headers.get("x-request-id", "")
+        rid = supplied if _SAFE_RID.fullmatch(supplied) else uuid.uuid4().hex[:16]
+        request.state.request_id = rid
         t0 = time.perf_counter()
         path = request.url.path
         traced = path.startswith("/api/") and not path.startswith(("/api/jobs", "/api/traces"))
