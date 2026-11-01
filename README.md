@@ -19,9 +19,9 @@
 ![Docker](https://img.shields.io/badge/Docker%20Compose-2496ED?logo=docker&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-<img src="docs/media/evalforge-enterprise-demo.gif" alt="EvalForge walkthrough: operations overview, Copilot investigation, incident, drift monitoring, pipeline studio" width="100%">
+<img src="docs/media/evalforge-enterprise-demo.gif" alt="EvalForge walkthrough: sign-in, live Copilot investigation, React Flow pipeline DAG and lineage, drift PSI heatmap, evaluation score heatmap" width="100%">
 
-<sub>12-second walkthrough of the running app · <a href="docs/media/evalforge-enterprise-demo.mp4">1080p MP4</a></sub>
+<sub>13-second walkthrough recorded from real clicks in the running app (sign-in → Copilot investigation → pipeline DAG & lineage → drift history → evaluation heatmap) · <a href="docs/media/evalforge-enterprise-demo.mp4">1080p MP4</a></sub>
 
 </div>
 
