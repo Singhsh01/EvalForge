@@ -77,6 +77,33 @@ jobs:
         working-directory: frontend
         run: npm ci && npm audit --omit=dev --audit-level=high
 
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - name: Start API (lite profile)
+        working-directory: backend
+        run: |
+          uv sync --frozen --python 3.12
+          EVALFORGE_DATA_DIR=$RUNNER_TEMP/ef nohup uv run uvicorn evalforge.main:app --port 8000 > $RUNNER_TEMP/api.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf localhost:8000/api/health/ready && break; sleep 2; done
+      - name: Case studies end to end (pipelines, approvals, canary, drift, retraining, agent eval)
+        working-directory: backend
+        run: uv run python -m evalforge.demo.enterprise_demo
+      - name: Browser smoke test
+        working-directory: frontend
+        run: |
+          npm ci && npx playwright install --with-deps chromium && npm run build
+          nohup npm start > $RUNNER_TEMP/web.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:3000/login && break; sleep 2; done
+          npm run e2e
+      - if: failure()
+        run: tail -n 200 $RUNNER_TEMP/api.log $RUNNER_TEMP/web.log || true
+
   containers:
     runs-on: ubuntu-latest
     needs: [backend, frontend]

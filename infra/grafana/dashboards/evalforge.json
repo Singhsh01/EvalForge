@@ -1,0 +1,280 @@
+{
+ "title": "EvalForge operations",
+ "uid": "evalforge-ops",
+ "schemaVersion": 39,
+ "time": {
+  "from": "now-6h",
+  "to": "now"
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "DS",
+    "type": "datasource",
+    "query": "prometheus"
+   }
+  ]
+ },
+ "panels": [
+  {
+   "type": "timeseries",
+   "title": "HTTP requests / s by route",
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum by (route) (rate(evalforge_http_requests_total[5m]))",
+     "legendFormat": "{{route}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "HTTP p95 latency",
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    }
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le, route) (rate(evalforge_http_request_duration_seconds_bucket[5m])))",
+     "legendFormat": "{{route}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "5xx error ratio",
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(evalforge_http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(evalforge_http_requests_total[5m])), 1e-9)",
+     "legendFormat": "errors",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Predictions / s by version",
+   "gridPos": {
+    "x": 12,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum by (model, version, role) (rate(evalforge_predictions_total[5m]))",
+     "legendFormat": "{{model}} v{{version}} {{role}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Inference p95",
+   "gridPos": {
+    "x": 0,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    }
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le, model) (rate(evalforge_inference_latency_seconds_bucket[5m])))",
+     "legendFormat": "{{model}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Background jobs",
+   "gridPos": {
+    "x": 12,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum by (kind, status) (increase(evalforge_jobs_total[15m]))",
+     "legendFormat": "{{kind}} {{status}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "LLM tokens / min",
+   "gridPos": {
+    "x": 0,
+    "y": 24,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum by (model, direction) (rate(evalforge_llm_tokens_total[5m])) * 60",
+     "legendFormat": "{{model}} {{direction}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Copilot tool calls",
+   "gridPos": {
+    "x": 12,
+    "y": 24,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum by (tool, status) (increase(evalforge_copilot_tool_calls_total[15m]))",
+     "legendFormat": "{{tool}} {{status}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Drift alerts",
+   "gridPos": {
+    "x": 0,
+    "y": 32,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum by (model) (increase(evalforge_drift_alerts_total[1h]))",
+     "legendFormat": "{{model}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Pipeline step retries",
+   "gridPos": {
+    "x": 12,
+    "y": 32,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${DS}"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum by (step) (increase(evalforge_pipeline_step_retries_total[1h]))",
+     "legendFormat": "{{step}}",
+     "refId": "A"
+    }
+   ]
+  }
+ ]
+}

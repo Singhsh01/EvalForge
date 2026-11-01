@@ -1,5 +1,5 @@
 # EvalForge developer commands. Lite profile needs only uv and Node 20+.
-.PHONY: setup dev api web worker test lint demo compose-up compose-down mlflow-ui clean
+.PHONY: setup dev api web worker test lint demo demo-enterprise e2e compose-up compose-down observability mlflow-ui clean
 
 setup:            ## install backend + frontend dependencies
 	cd backend && uv sync
@@ -23,6 +23,12 @@ mlflow-ui:        ## browse the embedded MLflow store on :5000
 demo:             ## Demonstration: public dataset -> 3 runs -> comparison (API must be running)
 	cd backend && uv run python -m evalforge.demo.run_demo --out ../docs/results
 
+demo-enterprise:  ## Case studies 1-3 end to end through the API (API + worker must be running)
+	cd backend && uv run python -m evalforge.demo.enterprise_demo --out ../docs/results
+
+e2e:              ## Browser smoke test across all modules (API + web running; playwright browsers installed)
+	cd frontend && npm run e2e
+
 test:
 	cd backend && uv run pytest
 	cd frontend && npm run typecheck
@@ -32,6 +38,9 @@ lint:
 
 compose-up:
 	GIT_COMMIT=$$(git rev-parse HEAD 2>/dev/null || echo unknown) docker compose up --build -d
+
+observability:    ## full stack + OTel Collector, Jaeger, Prometheus, Grafana
+	docker compose --profile observability up --build -d
 
 compose-down:
 	docker compose down

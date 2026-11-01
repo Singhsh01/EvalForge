@@ -266,7 +266,7 @@ def upgrade() -> None:
         sa.Column("pipeline", sa.String(length=64), nullable=False),
         sa.Column("config", sa.JSON(), nullable=False),
         sa.Column("config_hash", sa.String(length=64), nullable=False),
-        sa.Column("status", sa.String(length=16), nullable=False),
+        sa.Column("status", sa.String(length=24), nullable=False),
         sa.Column("trigger", sa.String(length=32), nullable=False),
         sa.Column("triggered_by", sa.String(length=64), nullable=False),
         sa.Column("job_id", sa.String(length=32), nullable=True),

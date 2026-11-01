@@ -154,6 +154,7 @@ def tool_selection(case: dict, output: dict, cfg: dict) -> Score:
             "missing": sorted(expected - used),
             "unexpected": sorted(used - expected),
             "forbidden_used": sorted(used & forbidden),
+            "attempted_but_failed": attempted_failed,
             "precision": round(precision, 4),
             "recall": round(recall, 4),
         },

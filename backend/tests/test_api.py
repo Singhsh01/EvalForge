@@ -200,7 +200,10 @@ def test_demo_dataset(client):
 
 
 def _utc(ts: str) -> bool:
-    return ts.endswith(("Z", "+00:00"))
+    """Timezone-aware ISO 8601 (SQLite yields UTC, PostgreSQL the server's offset)."""
+    import re
+
+    return bool(re.search(r"(Z|[+-]\d\d:\d\d)$", ts))
 
 
 def test_timestamps_are_timezone_aware(client, churn_csv):

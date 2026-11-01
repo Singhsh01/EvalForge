@@ -301,7 +301,7 @@ class PipelineRun(Base):
     pipeline: Mapped[str] = mapped_column(String(64), index=True)
     config: Mapped[dict[str, Any]] = mapped_column(JSON)
     config_hash: Mapped[str] = mapped_column(String(64))
-    status: Mapped[str] = mapped_column(String(16), default="queued", index=True)
+    status: Mapped[str] = mapped_column(String(24), default="queued", index=True)
     trigger: Mapped[str] = mapped_column(String(32), default="manual")  # manual|schedule|incident
     triggered_by: Mapped[str] = mapped_column(String(64))
     job_id: Mapped[str | None] = mapped_column(ForeignKey("jobs.id"), nullable=True)

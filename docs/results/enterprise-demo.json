@@ -1,0 +1,521 @@
+{
+  "generated_at": "2026-11-01T16:20:39.643127+00:00",
+  "case1": {
+    "dataset": {
+      "name": "breast-cancer-wisconsin",
+      "version": 1,
+      "sha256": "518936fa92ca3d8a78c420aee22030c4e519ffcba3be15dd23e83f2fc22e20e5",
+      "rows": 569
+    },
+    "champion": {
+      "model_version_id": "fc7387c5a33b4ff5b44bae8c362b84bd",
+      "metrics": {
+        "accuracy": 0.964912,
+        "balanced_accuracy": 0.957341,
+        "precision": 0.975,
+        "recall": 0.928571,
+        "f1": 0.95122,
+        "f1_weighted": 0.964725,
+        "log_loss": 0.077265,
+        "roc_auc": 0.996032,
+        "train_accuracy": 0.986813,
+        "train_f1": 0.982036,
+        "cv_f1_macro_mean": 0.971707,
+        "cv_f1_macro_std": 0.00566,
+        "latency_batch_ms_per_row": 0.030564,
+        "latency_single_p50_ms": 2.611374,
+        "latency_single_p95_ms": 3.268887,
+        "training_seconds": 0.0138,
+        "generalization_gap_f1": 0.030816
+      },
+      "pipeline_run_id": "646f2d898de5401f8e8131d53431d401",
+      "lineage": {
+        "git_commit": "8af11c1010827bb7bc8e113835cd5a340e43398d",
+        "dataset": "breast-cancer-wisconsin",
+        "dataset_version": 1,
+        "dataset_sha256": "518936fa92ca3d8a78c420aee22030c4e519ffcba3be15dd23e83f2fc22e20e5",
+        "dataset_version_id": "ee6e34248f55403c982dd5fd3aee1996",
+        "run_id": "ac226a46aae84c5eaedf412231228051",
+        "mlflow_run_id": "c31fcd6e3b7a4d53b81ba75807dec34c",
+        "model_uri": "models:/m-f57a25b4ffbe4475b22005f887d7d5c8",
+        "model_version_id": "fc7387c5a33b4ff5b44bae8c362b84bd",
+        "name": "breast-cancer-wisconsin",
+        "version": 1,
+        "deployment_id": "8e3c66f258054609ad415aed888269af",
+        "approval_id": "cdf699e8197f459bbd7fe457a03c1157"
+      },
+      "health": {
+        "healthy": true,
+        "checks": {
+          "model_loads": true,
+          "predictions_valid": true,
+          "latency_ok": true,
+          "smoke_accuracy_ok": true
+        },
+        "load_ms": 346.7,
+        "p95_ms": 4.194,
+        "smoke_accuracy": 0.96,
+        "samples": 25,
+        "checked_at": "2026-11-01T16:20:47.991108+00:00"
+      }
+    },
+    "challenger_pipeline": {
+      "id": "27a07eba840e4f359e9d13c0260844d2",
+      "status": "succeeded",
+      "gate": {
+        "passed": true,
+        "checks": [
+          {
+            "id": "min_f1",
+            "passed": true,
+            "blocking": true,
+            "detail": "holdout F1 0.9500 (minimum 0.8)"
+          },
+          {
+            "id": "latency_p95",
+            "passed": true,
+            "blocking": true,
+            "detail": "single-row p95 5.0 ms (maximum 250.0 ms)"
+          },
+          {
+            "id": "overfitting",
+            "passed": true,
+            "blocking": false,
+            "detail": "train\u2013test F1 gap 0.050 (warning above 0.15)"
+          },
+          {
+            "id": "no_leakage_warning",
+            "passed": true,
+            "blocking": false,
+            "detail": "No feature deterministically encodes the label"
+          },
+          {
+            "id": "no_regression_vs_champion",
+            "passed": true,
+            "blocking": true,
+            "detail": "candidate F1 0.9500 vs champion v1 0.9512 on the same holdout (\u0394 -0.0012, tolerance 0.01)"
+          }
+        ],
+        "champion_comparison": {
+          "champion_id": "fc7387c5a33b4ff5b44bae8c362b84bd",
+          "champion_version": 1,
+          "evaluated_on_dataset_version": 1,
+          "champion_f1": 0.95122,
+          "candidate_f1": 0.95,
+          "delta_f1": -0.00122,
+          "champion_metrics": {
+            "accuracy": 0.964912,
+            "balanced_accuracy": 0.957341,
+            "precision": 0.975,
+            "recall": 0.928571,
+            "f1": 0.95122,
+            "f1_weighted": 0.964725,
+            "log_loss": 0.077265,
+            "roc_auc": 0.996032
+          }
+        }
+      }
+    },
+    "canary": {
+      "traffic_percent": 25,
+      "observed_split_over_400": {
+        "v2-canary": 101,
+        "v1-stable": 299
+      },
+      "rolled_back": true
+    }
+  },
+  "case3": {
+    "calibration_factor": 1.35,
+    "shifted_features": [
+      "mean_radius",
+      "mean_perimeter",
+      "mean_area",
+      "worst_radius",
+      "worst_perimeter",
+      "worst_area",
+      "area_error"
+    ],
+    "window_started": "2026-11-01T16:21:11.116469+00:00",
+    "in_distribution_report": {
+      "id": "a6c8702c048f4d7190434eb1fed64ba3",
+      "summary": {
+        "data_drift": false,
+        "drift_share": 0.0,
+        "drifted_features": [],
+        "prediction_drift": false,
+        "performance_degradation": false,
+        "labels_available": true,
+        "verdict": "no_drift",
+        "reference_samples": 455,
+        "current_samples": 300
+      },
+      "f1": 0.981982
+    },
+    "drifted_report": {
+      "id": "7e54935e14074145ab6830a3df440d24",
+      "summary": {
+        "data_drift": false,
+        "drift_share": 0.2333,
+        "drifted_features": [
+          "worst_radius",
+          "worst_perimeter",
+          "mean_radius",
+          "mean_perimeter",
+          "mean_area",
+          "worst_area",
+          "area_error"
+        ],
+        "prediction_drift": true,
+        "performance_degradation": true,
+        "labels_available": true,
+        "verdict": "performance_degradation",
+        "reference_samples": 455,
+        "current_samples": 300
+      },
+      "performance": {
+        "labelled_samples": 300,
+        "baseline_f1": 0.95122,
+        "current": {
+          "accuracy": 0.883333,
+          "balanced_accuracy": 0.904891,
+          "precision": 0.768212,
+          "recall": 1.0,
+          "f1": 0.868914,
+          "f1_weighted": 0.884849,
+          "log_loss": 0.256572,
+          "roc_auc": 0.99822
+        },
+        "f1_drop": 0.0823,
+        "degraded": true
+      },
+      "top_features": [
+        {
+          "feature": "worst_radius",
+          "psi": 2.2895
+        },
+        {
+          "feature": "worst_perimeter",
+          "psi": 2.1882
+        },
+        {
+          "feature": "mean_radius",
+          "psi": 1.6201
+        },
+        {
+          "feature": "mean_perimeter",
+          "psi": 1.4986
+        },
+        {
+          "feature": "mean_area",
+          "psi": 0.5885
+        },
+        {
+          "feature": "worst_area",
+          "psi": 0.5395
+        },
+        {
+          "feature": "area_error",
+          "psi": 0.303
+        },
+        {
+          "feature": "perimeter_error",
+          "psi": 0.0604
+        }
+      ]
+    },
+    "incident_id": "5718eda55183488186e8cc43b8c1df84",
+    "copilot_session": "8855989c0df1431f8462b0e5c594d99a",
+    "copilot_hypotheses": [
+      {
+        "hypothesis": "Covariate shift in worst_radius, worst_perimeter, mean_radius is degrading measured quality.",
+        "confidence": "high",
+        "evidence": [
+          "7e54935e14074145ab6830a3df440d24"
+        ]
+      }
+    ],
+    "retraining_plan": {
+      "justified": true,
+      "reasons": [
+        "Measured F1 drop of 0.082 on 300 labelled production samples."
+      ]
+    },
+    "retraining_pipeline": {
+      "id": "456208baeac34b85b9bb784acdb9ac6b",
+      "status": "awaiting_approval",
+      "gate": {
+        "passed": true,
+        "checks": [
+          {
+            "id": "min_f1",
+            "passed": true,
+            "blocking": true,
+            "detail": "holdout F1 0.9492 (minimum 0.8)"
+          },
+          {
+            "id": "latency_p95",
+            "passed": true,
+            "blocking": true,
+            "detail": "single-row p95 2.6 ms (maximum 250.0 ms)"
+          },
+          {
+            "id": "overfitting",
+            "passed": true,
+            "blocking": false,
+            "detail": "train\u2013test F1 gap 0.041 (warning above 0.15)"
+          },
+          {
+            "id": "no_leakage_warning",
+            "passed": true,
+            "blocking": false,
+            "detail": "No feature deterministically encodes the label"
+          },
+          {
+            "id": "no_regression_vs_champion",
+            "passed": true,
+            "blocking": true,
+            "detail": "candidate F1 0.9492 vs champion v1 0.9219 on the same holdout (\u0394 +0.0273, tolerance 0.01)"
+          }
+        ],
+        "champion_comparison": {
+          "champion_id": "fc7387c5a33b4ff5b44bae8c362b84bd",
+          "champion_version": 1,
+          "evaluated_on_dataset_version": 2,
+          "champion_f1": 0.921875,
+          "candidate_f1": 0.949153,
+          "delta_f1": 0.027278,
+          "champion_metrics": {
+            "accuracy": 0.939024,
+            "balanced_accuracy": 0.941493,
+            "precision": 0.893939,
+            "recall": 0.951613,
+            "f1": 0.921875,
+            "f1_weighted": 0.939367,
+            "log_loss": 0.145542,
+            "roc_auc": 0.989564
+          }
+        }
+      }
+    },
+    "after_release_report": {
+      "id": "3edd7660f9434601acc4cec04d9d8f30",
+      "summary": {
+        "data_drift": false,
+        "drift_share": 0.2333,
+        "drifted_features": [
+          "mean_radius",
+          "mean_perimeter",
+          "worst_radius",
+          "worst_perimeter",
+          "mean_area",
+          "worst_area",
+          "area_error"
+        ],
+        "prediction_drift": false,
+        "performance_degradation": false,
+        "labels_available": true,
+        "verdict": "no_drift",
+        "reference_samples": 655,
+        "current_samples": 300
+      },
+      "performance": {
+        "labelled_samples": 300,
+        "baseline_f1": 0.949153,
+        "current": {
+          "accuracy": 0.993333,
+          "balanced_accuracy": 0.992308,
+          "precision": 1.0,
+          "recall": 0.984615,
+          "f1": 0.992248,
+          "f1_weighted": 0.993327,
+          "log_loss": 0.054393,
+          "roc_auc": 0.997149
+        },
+        "f1_drop": -0.0431,
+        "degraded": false
+      }
+    }
+  },
+  "case2": {
+    "suite": "copilot-investigations@v1",
+    "cases": 5,
+    "baseline": {
+      "run_id": "05d7976c5c314aaebba78c3e829d5ea5",
+      "config": "copilot@v1",
+      "summary": {
+        "cases": 5,
+        "passed": 5,
+        "errors": 0,
+        "pass_rate": 1.0,
+        "evaluator_means": {
+          "tool_selection": 0.8,
+          "task_completion": 1.0,
+          "agent_efficiency": 1.0
+        },
+        "latency_ms": {
+          "p50": 38.46,
+          "p95": 148.64
+        },
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "gates": {
+          "pass_rate": {
+            "min": 1.0,
+            "value": 1.0,
+            "passed": true
+          }
+        },
+        "gates_passed": true
+      }
+    },
+    "regressed": {
+      "run_id": "cb291c3899cd4b9688c46955eb0ddb0e",
+      "config": "copilot@v2",
+      "summary": {
+        "cases": 5,
+        "passed": 3,
+        "errors": 0,
+        "pass_rate": 0.6,
+        "evaluator_means": {
+          "tool_selection": 0.66,
+          "task_completion": 0.8,
+          "agent_efficiency": 1.0
+        },
+        "latency_ms": {
+          "p50": 47.94,
+          "p95": 57.61
+        },
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "gates": {
+          "pass_rate": {
+            "min": 1.0,
+            "value": 0.6,
+            "passed": false
+          }
+        },
+        "gates_passed": false
+      },
+      "regression": {
+        "baseline_run_id": "05d7976c5c314aaebba78c3e829d5ea5",
+        "baseline_subject": "agent:59a84e044fd4434c84a5fe94b6bbe817",
+        "current_subject": "agent:b813f14129ab429697af4767d04e2030",
+        "tolerance": 0.05,
+        "deltas": {
+          "pass_rate": -0.4,
+          "tool_selection": -0.14,
+          "task_completion": -0.2,
+          "agent_efficiency": 0.0
+        },
+        "regressed_metrics": {
+          "pass_rate": -0.4,
+          "tool_selection": -0.14,
+          "task_completion": -0.2
+        },
+        "newly_failing_cases": [
+          {
+            "case_id": "regression",
+            "failed_evaluators": [
+              "tool_selection",
+              "task_completion"
+            ],
+            "error": null
+          },
+          {
+            "case_id": "dataset",
+            "failed_evaluators": [
+              "tool_selection"
+            ],
+            "error": null
+          }
+        ],
+        "detected": true
+      }
+    },
+    "incident_id": "de807f9054c04dacba654e363ce81721",
+    "copilot_session": "2467d1f23fcb4d11b6b009bc06b13012",
+    "copilot_findings": [
+      {
+        "claim": "Eval run cb291c38 (agent:b813f14129ab429697af4767d04e2030) pass rate 60% vs baseline 05d7976c (agent:59a84e044fd4434c84a5fe94b6bbe817) 100%; 2 case(s) newly failing: regression, dataset.",
+        "evidence": [
+          "cb291c3899cd4b9688c46955eb0ddb0e",
+          "05d7976c5c314aaebba78c3e829d5ea5"
+        ]
+      },
+      {
+        "claim": "Failing cases did not call: diff_dataset_versions (2 cases)",
+        "evidence": [
+          "cb291c3899cd4b9688c46955eb0ddb0e",
+          "d88cc0aaefd019357d1667973d55a22c",
+          "d88cc0aaefd019357d1667973d55a22c"
+        ]
+      },
+      {
+        "claim": "Config copilot@v1 \u2192 copilot@v2: tools removed ['diff_dataset_versions'], added [], other changes [].",
+        "evidence": [
+          "59a84e044fd4434c84a5fe94b6bbe817",
+          "b813f14129ab429697af4767d04e2030"
+        ]
+      }
+    ],
+    "copilot_hypotheses": [
+      {
+        "hypothesis": "Removing ['diff_dataset_versions'] in copilot@v2 caused the regression: every newly failing case needed it.",
+        "confidence": "high",
+        "evidence": [
+          "59a84e044fd4434c84a5fe94b6bbe817",
+          "b813f14129ab429697af4767d04e2030",
+          "cb291c3899cd4b9688c46955eb0ddb0e"
+        ]
+      }
+    ],
+    "fixed": {
+      "run_id": "e0072e6cfb8043e1866076929a03a3a7",
+      "config": "copilot@v3",
+      "summary": {
+        "cases": 5,
+        "passed": 5,
+        "errors": 0,
+        "pass_rate": 1.0,
+        "evaluator_means": {
+          "tool_selection": 0.8,
+          "task_completion": 1.0,
+          "agent_efficiency": 1.0
+        },
+        "latency_ms": {
+          "p50": 40.01,
+          "p95": 42.43
+        },
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "gates": {
+          "pass_rate": {
+            "min": 1.0,
+            "value": 1.0,
+            "passed": true
+          }
+        },
+        "gates_passed": true
+      },
+      "regression": {
+        "baseline_run_id": "cb291c3899cd4b9688c46955eb0ddb0e",
+        "baseline_subject": "agent:b813f14129ab429697af4767d04e2030",
+        "current_subject": "agent:1c4e688e00ce4a7aa5cbce515b1783bf",
+        "tolerance": 0.05,
+        "deltas": {
+          "pass_rate": 0.4,
+          "tool_selection": 0.14,
+          "task_completion": 0.2,
+          "agent_efficiency": 0.0
+        },
+        "regressed_metrics": {},
+        "newly_failing_cases": [],
+        "detected": false
+      }
+    }
+  }
+}

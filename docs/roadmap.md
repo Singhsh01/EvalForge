@@ -1,42 +1,42 @@
-# Roadmap and acceptance criteria
+# Implemented vs. planned
 
-A phase is marked done only when its acceptance criteria are verified by tests or recorded
-execution evidence.
+Status of the enterprise milestones (branch `feature/enterprise-ai-operations`). "Verified"
+names the automated test or the recorded demo that exercises the feature.
 
-| Phase | Scope | Status |
-|---|---|---|
-| 1 Architecture | Architecture, data model, API contracts, security notes, ADRs | **Done** — [architecture.md](architecture.md), [adr/](adr), [openapi.json](openapi.json) |
-| 2 Vertical slice | Dataset upload → profiling/quality → training → MLflow tracking → evaluation → dashboard | **Done** — see evidence below |
-| 3 MLOps infrastructure | DVC remote, Prefect flows, MLflow registry (aliases), approvals, serving endpoint, deploy/rollback, CI/CD hardening | Next |
-| 4 AI evaluation | Provider abstraction (Claude + OpenAI-compatible), prompt versioning, deterministic / LLM-judge / RAG / agent evaluators, regression gates | Planned |
-| 5 Observability | OpenTelemetry traces, Prometheus metrics, Grafana, trace explorer, redaction | Planned |
-| 6 Drift & retraining | Evidently drift, alerting, incidents, Prefect retraining with human approval and rollback | Planned |
-| 7 Frontend | Remaining modules, React Flow pipelines, trace waterfall, monitoring views | Planned |
-| 8 Verification | E2E (Playwright) suite, evaluation benchmarks, load tests | Partially (backend unit/integration in place) |
-| 9 Documentation | Case studies, benchmark methodology, final screenshots | Started |
+| Area | Feature | Status | Verified by |
+|---|---|---|---|
+| **Security** | Bearer-token auth, PBKDF2 passwords, token revocation | ✅ | `test_ops::test_auth_required_and_roles`, `test_logout_revokes_token` |
+| | Roles viewer/engineer/approver/admin | ✅ | `test_ops`, browser e2e |
+| | Separation of duties on approvals | ✅ | `test_ops::test_self_approval_blocked_and_rejection` |
+| | Rate limiting | ✅ | `test_ops::test_login_rate_limited` |
+| | Secret/PII redaction in telemetry | ✅ | `test_observability::test_redaction_of_secrets_in_spans` |
+| | SSO/OIDC, MFA | ⏳ planned | — |
+| **Registry & deployment** | MLflow registration, `champion` alias, model cards | ✅ | `test_ops::test_full_lifecycle…`, case study 1 |
+| | Quality gates incl. champion re-scored on the same holdout | ✅ | `test_ops::test_gate_blocks_regression_against_champion` |
+| | Staging/production, release health checks, failed-health records | ✅ | `test_ops::test_production_requires_approved_version…` |
+| | Canary routing, canary promotion, rollback | ✅ | `test_ops::test_full_lifecycle…`, case study 1 (101/400 canary) |
+| | Versioned inference API, prediction logging, label feedback | ✅ | `test_ops`, `test_drift` |
+| | KServe / Kubernetes serving | ⏳ planned (optional) | — |
+| **Pipelines** | Persisted DAG, retries, resume, config hash, lineage | ✅ | `test_pipelines` (5 tests) |
+| | Interval schedules | ✅ | `test_pipelines::test_schedules_trigger_when_due` |
+| | Prefect / DVC integration | ⏳ deferred — see ADR 0006 / 0004 | — |
+| **LLMOps** | Provider abstraction (Anthropic, OpenAI-compatible) | ✅ implemented | unit-tested via test double; **no live-LLM run** (no key) |
+| | Prompt registry, versions, diff, approval-gated release | ✅ | `test_llmops::test_prompt_registry…`, `…release` |
+| | Deterministic, JSON-schema, reference, tool-call, task, efficiency evaluators | ✅ | `test_llmops::test_agent_evaluators` etc. |
+| | RAG retrieval metrics (TF-IDF retriever), groundedness, citation checks | ✅ | `test_llmops::test_rag_retrieval_suite…`, `test_groundedness…` |
+| | LLM-as-judge + human calibration | ✅ implemented | test double only |
+| | Regression detection → incident | ✅ | `test_llmops`, case study 2 |
+| **Observability** | OTel spans (API, worker, training, MLflow, inference, LLM, evals, Copilot) | ✅ | `test_observability::test_request_trace…` |
+| | DB exporter + OTLP export, trace explorer | ✅ | `test_observability`, screenshots |
+| | Prometheus metrics, Grafana dashboard | ✅ metrics tested; dashboard provisioned | `test_observability::test_metrics…` |
+| **Drift** | KS/χ²/PSI feature drift, prediction drift, label-aware performance | ✅ | `test_drift` (3 tests), case study 3 |
+| | Incidents, retraining plans, approval-gated retraining | ✅ | `test_drift::test_drift_lifecycle…`, case study 3 |
+| | Evidently | ⏳ deferred — ADR 0007 | — |
+| **Copilot** | 16 permissioned tools, rules + LLM planners, evidence validation, budgets, cancellation | ✅ | `test_copilot` (6 tests) |
+| | Incident investigation | ✅ | `test_copilot::test_agent_regression…`, case studies 2–3 |
+| | LangGraph | ⏳ not used — ADR 0008 | — |
+| **Frontend** | 15 modules + sign-in, all wired to the API | ✅ | `npm run build`, `frontend/e2e/smoke.mjs` |
+| | Component unit tests | ⏳ planned (covered by e2e smoke for now) | — |
+| **Ops** | Docker Compose (core + observability profile), CI (lint, tests on SQLite + PostgreSQL, migration drift, builds, security scans, e2e) | ✅ written | CI on GitHub; container images not built locally (Docker Hub blocked in dev sandbox) |
 
-## Phase 2 acceptance criteria and evidence
-
-| Criterion | Evidence |
-|---|---|
-| CSV and JSON (array + JSON Lines) upload with size/row/column limits | `tests/test_api.py::test_upload_profile_and_versioning`, `::test_rejects_bad_uploads` |
-| Schema, missing values, distributions, duplicates profiled | `tests/test_profiling.py::test_profile_has_histograms_and_top_values`; Dataset studio screenshot |
-| Quality checks with blocking vs. warning severity; rejected versions can't be trained | `::test_rejected_version_cannot_be_trained`, `test_profiling.py` |
-| Leakage checks: label-encoding features, train/test contamination, identifier columns | `test_profiling.py::test_target_leakage_detected`, `::test_split_is_deterministic_stratified_and_detects_overlap` |
-| Content-hash dataset versioning, dedupe, schema-compatibility between versions | `::test_upload_profile_and_versioning` |
-| Deterministic stratified split shared by all runs of a version | `test_profiling.py`, compare endpoint `same_holdout` |
-| ≥2 algorithms with validated hyperparameters, launched from the UI | 3 algorithms; `test_algorithms.py`; Experiment lab screenshot |
-| MLflow tracks params, metrics, dataset version, duration, artifacts, commit, environment | `::test_end_to_end_train_track_evaluate_compare` reads the run back from MLflow |
-| Background execution with recorded failures | `::test_failed_job_is_recorded_not_raised`; RQ worker used for demo evidence |
-| Evaluation against another dataset version using the model loaded from MLflow | `::test_end_to_end_train_track_evaluate_compare` |
-| Results dashboard: overview, run detail, comparison | `docs/screenshots/*.png` captured from the running app |
-| Works on SQLite and PostgreSQL | test suite run against both; CI runs both |
-| Reproducible | Demo executed twice from clean databases produced identical quality metrics |
-
-## Known limitations of the current slice
-* No authentication yet — bind to localhost only (compose already does).
-* Classification only (binary and multiclass ≤ 50 classes). Regression is a small addition
-  to `infer_task_type`, the metrics module and the algorithm catalogue.
-* Container images were written but not built in the development sandbox (Docker Hub was
-  unreachable there); CI builds and smoke-tests them.
-* Latency figures are in-process measurements on the machine that ran the job.
+Results: [docs/results/test-report.md](results/test-report.md).

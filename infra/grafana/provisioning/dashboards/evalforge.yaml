@@ -1,0 +1,6 @@
+apiVersion: 1
+providers:
+  - name: evalforge
+    folder: EvalForge
+    type: file
+    options: { path: /var/lib/grafana/dashboards }

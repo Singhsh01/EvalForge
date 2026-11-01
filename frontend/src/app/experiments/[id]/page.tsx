@@ -47,7 +47,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
       <PageHeader
         title={`${ALGO_LABEL[r.algorithm] ?? r.algorithm}`}
         description={<>Run <Mono>{r.id}</Mono> on <Link className="text-ember hover:underline" href={`/datasets/${ds.data?.id ?? ""}`}>{r.dataset_name} v{r.dataset_version_number}</Link></>}
-        action={<Status value={r.status} />}
+        action={<div className="flex items-center gap-3"><RegisterButton runId={r.id} enabled={r.status === "succeeded"} /><Status value={r.status} /></div>}
       />
 
       {(active || r.status === "failed") && job && (
@@ -156,4 +156,17 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
 
 function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return <div><dt className="text-xs text-white/45">{k}</dt><dd className="mt-0.5 text-white/85">{v}</dd></div>;
+}
+
+function RegisterButton({ runId, enabled }: { runId: string; enabled: boolean }) {
+  const qc = useQueryClient();
+  const m = useMutation({ mutationFn: () => api.register(runId), onSuccess: () => qc.invalidateQueries({ queryKey: ["models"] }) });
+  if (!enabled) return null;
+  if (m.data) return <Link className="text-sm text-ember" href="/registry">Registered as {m.data.name} v{m.data.version}, gate {m.data.gate?.passed ? "passed" : "blocked"}</Link>;
+  return (
+    <span className="flex items-center gap-2">
+      {m.error && <span className="text-xs text-fail">{(m.error as Error).message}</span>}
+      <Button variant="outline" loading={m.isPending} onClick={() => m.mutate()}>Register model</Button>
+    </span>
+  );
 }

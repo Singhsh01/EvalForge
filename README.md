@@ -2,392 +2,186 @@
 
 # EvalForge
 
-**An open control center for the full lifecycle of machine-learning models, LLM applications and AI agents: data, training, experiment tracking, evaluation, deployment and monitoring in one place, with every number traceable to a stored record.**
+**An AI engineering operations platform for the full lifecycle of ML models, LLM applications and AI agents: versioned data, governed training-to-production, evaluation, distributed tracing, drift monitoring, incidents, and an evidence-grounded MLOps Copilot. Every number on screen comes from a stored record.**
 
 [![CI](https://github.com/Singhsh01/EvalForge/actions/workflows/ci.yml/badge.svg)](https://github.com/Singhsh01/EvalForge/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%20|%203.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![MLflow](https://img.shields.io/badge/MLflow-3.x-0194E2?logo=mlflow&logoColor=white)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9-F7931E?logo=scikitlearn&logoColor=white)
+![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-425CC7?logo=opentelemetry&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?logo=scikitlearn&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis%20%2B%20RQ-DC382D?logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker%20Compose-2496ED?logo=docker&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-<img src="docs/media/evalforge-demo.gif" alt="EvalForge walkthrough: operations overview, dataset studio, run detail and run comparison" width="100%">
+<img src="docs/media/evalforge-enterprise-demo.gif" alt="EvalForge walkthrough: operations overview, Copilot investigation, incident, drift monitoring, pipeline studio" width="100%">
 
-<sub>11-second walkthrough recorded from the running app · <a href="docs/media/evalforge-demo.mp4">download the 1080p MP4</a></sub>
+<sub>12-second walkthrough of the running app · <a href="docs/media/evalforge-enterprise-demo.mp4">1080p MP4</a></sub>
 
 </div>
 
 ---
 
 ## Contents
+[What it does](#what-it-does) · [Case studies](#case-studies-measured) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Getting started](#getting-started) · [Feature status](#feature-status) · [Testing](#testing) · [Documentation](#documentation) · [Limitations](#known-limitations)
 
-- [Why EvalForge](#why-evalforge)
-- [Project status](#project-status)
-- [Features](#features)
-- [Screenshots](#screenshots)
-- [Measured results](#measured-results)
-- [Architecture](#architecture)
-- [How it works](#how-it-works)
-- [Tech stack](#tech-stack)
-- [Getting started](#getting-started)
-- [API overview](#api-overview)
-- [Testing and CI](#testing-and-ci)
-- [Repository layout](#repository-layout)
-- [Design decisions](#design-decisions)
-- [Security](#security)
-- [Roadmap](#roadmap)
-- [Known limitations](#known-limitations)
-- [License and data](#license-and-data)
+## What it does
 
----
-
-## Why EvalForge
-
-Teams that ship models usually stitch together a notebook, an experiment tracker, a few scripts and a dashboard. The usual result is metrics that can't be reproduced, comparisons made on different test sets, and no record of which data or code produced the model that's running.
-
-EvalForge treats the lifecycle as one connected system:
-
-```
-Data → Training → Experiment tracking → Evaluation → Registry → Deployment → Monitoring → Drift → Retraining → Re-evaluation
-```
-
-For LLM and agent systems the same idea extends to prompts and agent runs:
-
-```
-Prompt versioning → Agent execution → Tracing → Evaluation → Comparison → Approval → Release → Production monitoring → Feedback
-```
-
-Three principles guide the build:
-
-1. **Every number is traceable.** Metrics come from stored runs that point to an immutable dataset version (by SHA-256), a source commit, a seed and an MLflow run. Nothing on the dashboard is mocked.
-2. **Comparisons are fair by construction.** All runs on a dataset version are scored on the same persisted holdout rows, and the UI warns when they aren't.
-3. **It runs on a laptop.** The default profile needs no Docker and fits comfortably on an 8 GB Apple Silicon MacBook Air; heavier services are optional.
-
-## Project status
-
-EvalForge is built in nine phases. **Phases 1 and 2 are complete and verified.** Later modules appear in the app's navigation as planned items, never as placeholder screens.
-
-| Phase | Scope | Status |
+| Module | What you can do | Backed by |
 |---|---|---|
-| 1 · Architecture | Architecture, data model, API contracts, security model, ADRs | ✅ Done |
-| 2 · Vertical slice | Dataset upload → validation → training → MLflow tracking → evaluation → dashboard | ✅ Done |
-| 3 · MLOps infrastructure | MLflow model registry (aliases), approvals, serving API, deploy/rollback, Prefect flows, DVC | ⏳ Next |
-| 4 · AI evaluation | Claude + OpenAI-compatible providers, prompt versioning, deterministic / LLM-as-judge / RAG (Ragas) / agent evaluators, regression gates | Planned |
-| 5 · Observability | OpenTelemetry traces, Prometheus metrics, Grafana, trace explorer, redaction | Planned |
-| 6 · Drift and retraining | Evidently drift reports, alerts, incidents, approval-gated retraining | Planned |
-| 7–9 · Frontend, verification, docs | Remaining modules, E2E suite, benchmarks, case studies | Planned |
+| **Dataset studio** | Upload CSV/JSON; immutable SHA-256 versions; profiles; 13 quality & leakage checks; fixed stratified holdout | pandas, Parquet |
+| **Experiment lab** | Train logistic regression / random forest / histogram GBM with validated hyperparameters; CV, permutation importance, latency; compare runs | scikit-learn, MLflow |
+| **Pipeline studio** | Continuous training as a live DAG: validate → train → evaluate → register → gate → staging → promotion request; retries, resume, lineage, schedules | persisted DAG runner |
+| **Model registry** | MLflow registration, `champion` alias, quality gate that re-scores the champion on the candidate's holdout, model cards | MLflow registry |
+| **Deployment center** | Staging/production, release health checks, canary traffic splits, promote/rollback, inference playground | versioned inference API |
+| **Approvals** | Two-person control for promotion, production deploys, canary promotion, rollback, retraining, prompt release | role-based governance |
+| **Evaluation workbench** | Versioned suites for prompts, RAG and agents; deterministic, schema, tool-use, retrieval, groundedness, citation and LLM-judge evaluators; regression detection | evaluation engine |
+| **Prompt registry** | Templates with typed variables and JSON output schemas, diffs, evaluation-gated release | |
+| **Trace explorer** | Distributed trace waterfall across API, worker, training, MLflow, inference, LLM and agent spans; redaction | OpenTelemetry |
+| **Drift monitoring** | KS/χ²/PSI feature drift, prediction drift and label-confirmed degradation kept separate; PSI heatmap and distribution overlays | scipy |
+| **Incident investigation** | Auto-opened from drift and eval regressions; timeline, Copilot findings, justified + approval-gated retraining | |
+| **AI MLOps Copilot** | Ask *"Why did my latest model perform worse?"* — a tool-using agent gathers evidence from real data, and only claims citing that evidence survive | rules or LLM planner |
+| **Cost & performance** | Quality vs latency, evaluation tokens/cost, serving latency | |
+| **System health & audit** | Per-route latency/error rates, worker failures, retries, audit log, users | Prometheus metrics |
 
-Details and acceptance criteria are in [docs/roadmap.md](docs/roadmap.md).
+## Case studies (measured)
 
-## Features
+All three run end to end through the public API with separate *engineer* and *approver*
+accounts (`make demo-enterprise`), on PostgreSQL + MLflow server + Redis/RQ. Raw output:
+[`docs/results/enterprise-demo.json`](docs/results/enterprise-demo.json).
 
-### Dataset studio
-- Upload **CSV, JSON arrays or JSON Lines** with enforced size, row and column limits. Files are parsed with pandas only, never executed or unpickled.
-- Each upload becomes an **immutable, content-addressed version** (SHA-256). Re-uploading identical bytes returns `409`; a new version that drops or retypes columns returns `422`, so older models never silently break.
-- An automatic **profile** per version: column types, missingness, histograms for numeric columns, top values for categorical ones, duplicate rows and label distribution.
-- **13 quality and leakage checks**, split into *blocking* (the version can't be trained on) and *warnings*:
+**1 · [Training to production with a canary and a rollback](docs/case-studies/01-ml-lifecycle.md).**
+Public UCI breast-cancer data → pipeline → gate → approved promotion and production deploy
+(holdout F1 0.951, CV F1 0.972 ± 0.006, p95 3.3 ms). A challenger passed the gate within
+tolerance (Δ F1 −0.001) and went out as a 25 % canary: **101 of 400** requests reached it. It
+was then rolled back under approval.
 
-  | Check | Severity |
-  |---|---|
-  | Minimum row count · target column present · supported task type · minimum examples per class | blocking |
-  | Target completeness · class balance · high missingness · constant columns · duplicate rows · **target leakage** (features that encode the label) · **train/test contamination** | warning |
-  | Identifier-like columns (auto-excluded) · high-cardinality categoricals | info |
+**2 · [An agent regression found by evaluation and explained by the Copilot](docs/case-studies/02-agent-regression.md).**
+A Copilot config change ("trim tools to reduce latency") cut p95 latency from 149 to 58 ms. It
+also dropped the agent suite's pass rate from **100 % to 60 %**. Regression detection opened an
+incident, and the Copilot's investigation identified the removed tool with high confidence,
+citing run and config IDs. The fixed config went back to 100 %.
 
-- A **fixed, stratified holdout split** (80/20, seed 42) persisted with each version, so every run on that version is evaluated on identical rows.
-
-### Experiment lab
-- Three algorithms: **logistic regression** (baseline), **random forest** and **histogram gradient boosting**. Each has a typed hyperparameter schema; the API rejects unknown keys or out-of-range values, and the UI form is generated from the same schema.
-- Training runs as a **background job** with live stage, progress and log updates. Failures are recorded with their traceback instead of being lost.
-- **Task-aware metrics:** accuracy, balanced accuracy, precision, recall, F1 (binary uses the positive label, multiclass uses macro averaging), ROC-AUC, log loss, train–test gap, optional stratified k-fold cross-validation, **permutation feature importance** with standard deviation, and measured inference latency (p50/p95).
-- Everything is logged to **MLflow**: params, metrics, reproducibility tags (dataset hash, version, git commit, environment), the dataset as an MLflow input, diagnostics JSON and the model with signature and input example. Models are serialised with **skops** instead of pickle.
-- **Re-evaluation:** load any run's model back from MLflow and score it on another version of the dataset.
-- **Run comparison:** metrics side by side with the best value highlighted (knowing whether higher or lower is better, and showing ties), parameter differences, a grouped chart, and warnings when runs didn't share a holdout.
-
-### Operations overview
-- A lifecycle view where each stage lights up only once it holds real records.
-- Best model per dataset, recent runs, run counts by status, total compute time and an activity feed from the audit log.
+**3 · [A production drift incident, diagnosed and resolved under approval](docs/case-studies/03-drift-incident.md).**
+A synthetic scanner recalibration (+35 % on size features) dropped live F1 from **0.951 to
+0.869** on 300 labelled samples, with PSI up to 2.29 on exactly the shifted features.
+Retraining was justified only after labelled new data existed. The candidate beat the champion
+on the same holdout (0.949 vs 0.922). After an approved release, F1 on recalibrated traffic was
+**0.992**.
 
 ## Screenshots
 
-All screenshots are 1600 × 1000 captures of the running application with the demo dataset and three real training runs.
-
 <table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/01-overview.png" alt="Operations overview" width="100%"><br>
-      <b>Operations overview</b><br>
-      <sub>Lifecycle status, best model per dataset, audit-log activity and recent runs.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/02-dataset-studio.png" alt="Dataset studio" width="100%"><br>
-      <b>Dataset studio</b><br>
-      <sub>Version summary, 13 quality and leakage checks, label distribution and per-column histograms.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/03-experiment-lab.png" alt="Experiment lab" width="100%"><br>
-      <b>Experiment lab</b><br>
-      <sub>Schema-driven training form and the run table with holdout and cross-validated F1.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/04-run-detail.png" alt="Run detail" width="100%"><br>
-      <b>Run detail</b><br>
-      <sub>Headline metrics, confusion matrix and ROC curve on the fixed holdout.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/05-run-diagnostics.png" alt="Run diagnostics" width="100%"><br>
-      <b>Diagnostics and reproducibility</b><br>
-      <sub>Permutation importance, generalisation gap, latency, evaluations and MLflow lineage.</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/06-run-comparison.png" alt="Run comparison" width="100%"><br>
-      <b>Run comparison</b><br>
-      <sub>Grouped holdout metrics, best-per-metric highlighting and parameter differences.</sub>
-    </td>
-  </tr>
+<tr><td width="50%"><img src="docs/screenshots/01-overview.png" width="100%"><br><b>Operations overview</b> — lifecycle stages light up only when they hold records</td>
+<td width="50%"><img src="docs/screenshots/02-copilot-investigation.png" width="100%"><br><b>AI MLOps Copilot</b> — tool calls, cited findings, high-confidence hypothesis</td></tr>
+<tr><td><img src="docs/screenshots/03-incident-drift.png" width="100%"><br><b>Incident investigation</b> — timeline, evidence, approval-gated retraining</td>
+<td><img src="docs/screenshots/04-drift-monitoring.png" width="100%"><br><b>Drift monitoring</b> — PSI heatmap and reference vs current distributions</td></tr>
+<tr><td><img src="docs/screenshots/05-pipeline-studio.png" width="100%"><br><b>Pipeline studio</b> — live DAG state and lineage</td>
+<td><img src="docs/screenshots/07-deployment-center.png" width="100%"><br><b>Deployment center</b> — environments, health, history, inference playground</td></tr>
+<tr><td><img src="docs/screenshots/09-evaluation-regression.png" width="100%"><br><b>Evaluation workbench</b> — regression vs baseline with per-case evaluator details</td>
+<td><img src="docs/screenshots/10-trace-explorer.png" width="100%"><br><b>Trace explorer</b> — Copilot session waterfall</td></tr>
+<tr><td><img src="docs/screenshots/06-model-registry.png" width="100%"><br><b>Model registry</b> — gate checks, champion alias, promotion</td>
+<td><img src="docs/screenshots/08-approvals.png" width="100%"><br><b>Approvals</b> — two-person control and decision history</td></tr>
+<tr><td><img src="docs/screenshots/13-system-health.png" width="100%"><br><b>System health & audit</b></td>
+<td><img src="docs/screenshots/14-cost-performance.png" width="100%"><br><b>Cost & performance</b></td></tr>
 </table>
-
-## Measured results
-
-Demonstration 1 (Phase 2 part) on the **UCI Breast Cancer Wisconsin (Diagnostic)** dataset: public, CC BY 4.0, 569 rows and 30 numeric features, bundled with scikit-learn so no download is needed. The holdout is 114 rows, the positive class is *malignant*, CV is 5-fold on the training split and the seed is 42. The run used PostgreSQL, an MLflow server and a Redis/RQ worker; raw output is in [docs/results/phase2-demo.json](docs/results/phase2-demo.json).
-
-| Algorithm | F1 | Precision | Recall | ROC-AUC | Log loss | CV F1 (mean ± std) | Fit (s) | p50 latency (ms) |
-|---|---|---|---|---|---|---|---|---|
-| Logistic regression | 0.951 | 0.975 | 0.929 | 0.996 | **0.077** | **0.972 ± 0.006** | **0.009** | **2.4** |
-| Random forest | **0.963** | 1.000 | 0.929 | 0.994 | 0.115 | 0.950 ± 0.023 | 0.42 | 16.2 |
-| Hist. gradient boosting | 0.950 | 1.000 | 0.905 | 0.996 | 0.107 | 0.960 ± 0.022 | 0.32 | 4.2 |
-
-**How to read this.** On 114 holdout rows, one misclassified malignant case moves recall by about 0.024, so the holdout F1 differences are within noise. Cross-validated F1 and log loss favour logistic regression, which is also an order of magnitude faster. This is why EvalForge shows CV and holdout side by side instead of crowning a single winner. Two clean executions produced identical quality metrics. Latency is measured in-process on the machine that ran the job.
-
-**An engineering finding along the way:** running random-forest *prediction* single-threaded (training still uses two threads) cut single-row p50 latency from 66.8 ms to 16.2 ms, because thread dispatch dominated tiny predict calls. See [ADR 0005](docs/adr/0005-lightweight-local-profile.md).
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  user([Engineer]) -->|browser| web[Next.js web app<br/>:3000]
-  web -->|/api/* proxied| api[FastAPI control plane<br/>:8000]
-  api --> meta[(Metadata store<br/>PostgreSQL / SQLite)]
-  api -->|enqueue| q[(Redis queue)]
-  q --> worker[Job worker<br/>RQ]
-  api -. lite profile: thread pool .-> worker
-  worker --> meta
-  worker -->|params · metrics · models| mlflow[MLflow tracking<br/>+ registry]
-  worker --> files[(Content-addressed<br/>dataset store)]
-  api --> files
+  user([Engineer · Approver · Viewer]) --> web[Next.js :3000]
+  web -->|/api proxied| api[FastAPI control plane]
+  api --> db[(PostgreSQL / SQLite)]
+  api -->|jobs + trace context| q[(Redis / RQ)] --> worker[Worker]
+  worker --> mlflow[MLflow tracking + registry]
+  api --> mlflow
+  api -.optional.-> llm[Claude / OpenAI-compatible]
+  api -.OTLP.-> otel[OTel Collector → Jaeger]
+  prom[Prometheus → Grafana] --> api
 ```
 
-**Source-of-truth split:** MLflow owns run parameters, metrics and model artifacts. EvalForge's own database owns what MLflow doesn't model well: validated dataset versions with their checks and splits, job lifecycle, cross-version evaluations, approvals and the audit trail. Each side stores the other's ID, so a run can be traced in either direction.
+The core ideas:
+- **MLflow is the system of record** for runs and models.
+- **Governance and telemetry live in the platform database.**
+- **Production changes are approvals**, executed only by a second person.
+- **The Copilot can read but not act**: any action it wants becomes an approval request.
 
-Two runtime profiles run the same code:
-
-| | Lite (`make dev`) | Full (`docker compose up`) |
-|---|---|---|
-| Metadata | SQLite (WAL) | PostgreSQL 16 |
-| Experiment tracking | Embedded MLflow (SQLite + local artifacts) | MLflow server, Postgres store, served artifacts |
-| Background jobs | In-process thread pool | Redis + RQ worker |
-| Memory | ~450 MB | ~2.3 GB total container limits |
-| Requires | `uv`, Node 20+ | Docker |
-
-The full write-up, with data model and sequence diagrams, is in [docs/architecture.md](docs/architecture.md).
-
-## How it works
-
-```mermaid
-sequenceDiagram
-  participant UI as Web app
-  participant API as FastAPI
-  participant DB as Metadata DB
-  participant W as Worker
-  participant ML as MLflow
-  UI->>API: POST /api/runs (version, algorithm, hyperparameters)
-  API->>API: validate against the algorithm schema
-  API->>DB: create job + run (queued), audit event
-  API-->>UI: 202 Accepted
-  W->>DB: running · stage · progress · logs
-  W->>W: load parquet + persisted split, build pipeline, CV, fit
-  W->>W: holdout metrics, permutation importance, latency
-  W->>ML: log params, metrics, tags, dataset input, model (skops)
-  W->>DB: metrics, report, holdout evaluation, succeeded
-  UI->>API: poll run until finished
-```
-
-- **Pipelines:** one scikit-learn `Pipeline` combines a `ColumnTransformer` (imputation, scaling where the model needs it, one-hot encoding with infrequent-category grouping) and the estimator. Preprocessing is fitted on the training split only and ships inside the logged model, so serving can't drift from training.
-- **Feature selection** is automatic and recorded: the target, identifier-like columns and constant columns are excluded, with the reason stored on the run.
-- **Failure handling:** a job never crashes silently. Errors and tracebacks are stored on the job and the run. With the thread executor, jobs interrupted by a restart are marked failed rather than left "running".
-
-## Tech stack
-
-| Layer | Technology | Why |
-|---|---|---|
-| API | FastAPI, Pydantic v2 | Typed contracts, automatic OpenAPI, async I/O |
-| Persistence | SQLAlchemy 2, Alembic, PostgreSQL / SQLite | One schema across both profiles; migrations run on start-up and are checked for drift in CI |
-| ML | scikit-learn, pandas, NumPy | CPU-friendly, reproducible tabular pipelines |
-| Experiment tracking | MLflow 3 | System of record for runs and models; aliases for registry promotion |
-| Model serialisation | skops (via MLflow) | Loading a model doesn't execute arbitrary pickled code |
-| Jobs | RQ + Redis, or an in-process thread pool | Small and macOS-friendly; job state lives in the DB, so behaviour doesn't depend on the executor |
-| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS v4 | App Router, typed API client, self-hosted fonts so offline builds work |
-| Visualisation | Recharts, Motion | Confusion matrix, ROC, importance and comparison charts; motion that respects reduced-motion settings |
-| Data fetching | TanStack Query | Polling while jobs run, caching otherwise |
-| Delivery | Docker Compose, GitHub Actions | Reproducible full stack; CI covers lint, tests, migrations, builds and security scans |
-
-Coming in later phases: Prefect, DVC, Evidently, OpenTelemetry, Prometheus/Grafana, LangGraph, Ragas and the Anthropic Claude API.
+Full details: [docs/architecture.md](docs/architecture.md) and [ADRs 0001–0010](docs/adr).
 
 ## Getting started
 
-### Prerequisites
-- **Lite profile:** [uv](https://docs.astral.sh/uv/) and Node.js 20+ (`brew install uv node` on macOS)
-- **Full profile:** Docker Desktop
-
-### Lite profile (recommended for laptops)
-
+**Lite profile** (no Docker, about 450 MB of RAM; needs [uv](https://docs.astral.sh/uv/) and Node 20+):
 ```bash
-git clone https://github.com/Singhsh01/EvalForge.git
-cd EvalForge
-make setup     # uv sync + npm ci
-make dev       # API on :8000 and web app on :3000
+git clone https://github.com/Singhsh01/EvalForge.git && cd EvalForge
+make setup      # uv sync + npm ci
+make dev        # API :8000 (SQLite, embedded MLflow, thread executor) + web :3000
 ```
+Open http://localhost:3000 and sign in. The first start creates four accounts: **admin**,
+**engineer**, **approver** and **viewer**. Their password comes from
+`EVALFORGE_BOOTSTRAP_PASSWORD`, which defaults to `evalforge-dev` in development. Then do one
+of the following:
+- In the browser, click *Load the breast-cancer demo dataset*.
+- Run `make demo-enterprise` to reproduce all three case studies.
 
-Open **http://localhost:3000** and click **Load the breast-cancer demo dataset**, then launch runs from the **Experiment lab**.
+**Full profile:** `make compose-up` starts PostgreSQL, Redis, the MLflow server, the API, the
+worker and the web app (about 2.3 GB of memory limits).
+**Observability profile:** `make observability` adds the OTel Collector, Jaeger (:16686),
+Prometheus (:9090) and Grafana (:3001).
+**LLM features:** set `EVALFORGE_ANTHROPIC_API_KEY`, or an OpenAI-compatible
+`EVALFORGE_OPENAI_BASE_URL` such as local Ollama.
 
-Without `make`, use two terminals:
+All settings: [.env.example](.env.example).
 
-```bash
-# terminal 1
-cd backend && uv sync && uv run uvicorn evalforge.main:app --port 8000
-# terminal 2
-cd frontend && npm ci && npm run build && npm start
-```
+## Feature status
 
-Other useful commands:
+Implemented features and their tests, plus what is still planned:
+[docs/roadmap.md](docs/roadmap.md). In short:
+- **Implemented and verified:** auth and RBAC, registry, gates, approvals, canary and rollback,
+  pipelines, evaluation engine, tracing and metrics, drift and incidents, the Copilot, and all
+  15 UI modules.
+- **Implemented but not verified with a live LLM:** provider calls, prompt evaluations and the
+  LLM judge, because no API key was available.
+- **Deferred, with reasons in ADRs:** Prefect, DVC, Evidently, LangGraph, KServe, SSO.
 
-```bash
-make demo        # registers the dataset, trains 3 models and prints the comparison (API must be running)
-make mlflow-ui   # browse the same runs in the MLflow UI on :5000
-make test        # backend tests + frontend type check
-```
+## Testing
 
-### Full profile (Docker Compose)
-
-```bash
-cp .env.example .env    # optional
-make compose-up         # postgres, redis, mlflow, api, worker, web
-```
-
-Services bind to `127.0.0.1` only. Every setting is documented in [.env.example](.env.example).
-
-## API overview
-
-Interactive docs run at `http://localhost:8000/docs`, and the full spec is in [docs/openapi.json](docs/openapi.json).
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `GET` | `/api/health`, `/api/health/ready` | Liveness; readiness of database and MLflow |
-| `GET` | `/api/meta` | Version, executor and the algorithm catalogue with hyperparameter schemas |
-| `GET` | `/api/overview` | Dashboard aggregates computed from stored records |
-| `POST` | `/api/datasets` | Upload a file and register a dataset (creates v1) |
-| `POST` | `/api/datasets/{id}/versions` | Upload a new version (deduplicated, schema-checked) |
-| `GET` | `/api/datasets/{id}/versions/{v}` | Schema, profile, quality checks and split |
-| `GET` | `/api/datasets/{id}/versions/{v}/preview` | First rows of the stored data |
-| `POST` | `/api/runs` | Launch a training run (returns `202` with job and run) |
-| `GET` | `/api/runs`, `/api/runs/{id}` | List runs; full run detail with report and job logs |
-| `GET` | `/api/runs/compare?ids=…` | Compare 2–8 runs |
-| `POST` | `/api/runs/{id}/evaluations` | Re-score a run's model on another dataset version |
-| `GET` | `/api/jobs/{id}` | Job status, progress and logs |
-| `POST` | `/api/demo/breast-cancer` | Register the bundled public demo dataset |
-
-## Testing and CI
-
-```bash
-make test
-# run the same integration tests against PostgreSQL
-EVALFORGE_TEST_DATABASE_URL=postgresql+psycopg://user@localhost/evalforge_test \
-  uv run pytest tests/test_api.py
-```
-
-- **20 backend tests**: profiling and leakage detection, deterministic stratified splits, hyperparameter validation, every algorithm on mixed-type data with missing values, the upload and versioning rules, failure recording and timezone handling.
-- The **end-to-end test** trains all three algorithms through the HTTP API, then reads each run back from MLflow to check tags, dataset hash, metrics and dataset input. Finally it evaluates a model reloaded from MLflow on a new dataset version.
-- **GitHub Actions** ([ci.yml](.github/workflows/ci.yml)): ruff lint and format, tests on SQLite and PostgreSQL, a check that the ORM and migrations agree, frontend type check and production build, pip-audit, bandit, npm audit, and container builds with a smoke test.
-
-## Repository layout
-
-```
-backend/
-  evalforge/api/          HTTP routers: datasets, runs/evaluations/jobs, system
-  evalforge/services/     ingestion, profiling and checks, storage, training, jobs, MLflow
-  evalforge/ml/           algorithm catalogue and pipelines, metrics and diagnostics
-  evalforge/migrations/   Alembic migrations (applied on start-up)
-  evalforge/demo/         bundled public dataset and scripted demonstration
-  tests/                  unit and API integration tests
-frontend/
-  src/app/                overview, dataset studio, experiment lab, run detail, comparison
-  src/components/         shell, charts, lifecycle line, UI primitives
-  src/lib/                typed API client and formatting
-docs/
-  architecture.md         system design, data model, flows, planned phases
-  adr/                    architecture decision records
-  roadmap.md              phases and acceptance criteria with evidence
-  results/                measured demo output
-  screenshots/, media/    screenshots and demo video
-infra/                    database initialisation for Compose
-docker-compose.yml        full profile
-Makefile                  developer commands
-```
-
-## Design decisions
-
-| ADR | Decision |
+| Suite | Result |
 |---|---|
-| [0001](docs/adr/0001-monorepo-fastapi-nextjs.md) | FastAPI + Next.js monorepo; the browser only talks to Next, which proxies `/api` |
-| [0002](docs/adr/0002-mlflow-as-system-of-record.md) | MLflow is the system of record for runs and models; the registry will use aliases (stages are deprecated); skops serialisation |
-| [0003](docs/adr/0003-job-execution.md) | Pluggable executors (thread / RQ / sync) with job state stored in the database |
-| [0004](docs/adr/0004-dataset-versioning.md) | Content-addressed dataset versions with fixed splits; DVC arrives in Phase 3 as the remote and pipeline layer |
-| [0005](docs/adr/0005-lightweight-local-profile.md) | A profile that fits an 8 GB laptop: no GPU, no Kubernetes, one job at a time |
+| Backend: 55 tests (unit, API contract, integration, security, pipelines, LLMOps, observability, drift, Copilot) | ✅ SQLite · ✅ PostgreSQL |
+| Lint (ruff), migration-drift check | ✅ |
+| Frontend: type check and production build (19 routes) | ✅ |
+| Browser end-to-end smoke (sign-in, 15 modules, live Copilot investigation, auth redirect) | ✅ |
+| End-to-end case studies through the API (`enterprise_demo`) | ✅ full profile · ✅ lite profile |
 
-## Security
+Details and commands: [docs/results/test-report.md](docs/results/test-report.md).
 
-Already in place:
-- uploads are parsed, never executed
-- hyperparameters are validated against a schema
-- models are serialised with skops
-- dataset names are pattern-restricted, and storage paths are derived from server-generated IDs and hashes
-- containers run as non-root, with ports bound to localhost
-- dataset and run lifecycle actions are written to an audit log
+## Documentation
 
-**Not yet implemented:** authentication and role-based access control arrive in Phase 3. Until then, don't expose the API beyond localhost.
-
-## Roadmap
-
-- [x] Architecture, data model, API contracts and ADRs
-- [x] Dataset ingestion, profiling, quality and leakage checks, versioning
-- [x] Background training with MLflow tracking and skops models
-- [x] Holdout and cross-version evaluation; run comparison
-- [x] Dashboard: overview, dataset studio, experiment lab, run detail, comparison
-- [ ] MLflow model registry with `champion` / `challenger` aliases and approval records
-- [ ] Inference API with model-version selection, deployment records and rollback
-- [ ] Prefect continuous-training flow and DVC remote
-- [ ] LLM evaluation: provider abstraction, prompt versioning, LLM-as-judge with calibration, RAG metrics
-- [ ] Agent evaluation and OpenTelemetry trace explorer
-- [ ] Evidently drift monitoring, alerting and approval-gated retraining
-- [ ] Authentication, RBAC and rate limiting
+| | |
+|---|---|
+| [Architecture](docs/architecture.md) · [ADRs](docs/adr) · [Roadmap / feature matrix](docs/roadmap.md) | design |
+| [Deployment & rollback](docs/guides/deployment-and-rollback.md) · [MLOps pipelines](docs/guides/mlops-pipelines.md) · [Database migrations](docs/guides/database-migrations.md) | operate |
+| [Evaluation methodology](docs/guides/evaluation-methodology.md) · [Copilot](docs/guides/copilot.md) · [Observability](docs/guides/observability.md) · [Security](docs/guides/security.md) | understand |
+| [API reference](docs/guides/api-reference.md) (83 operations) · [OpenAPI](docs/openapi.json) | integrate |
+| [Case studies](docs/case-studies) · [Measured results](docs/results) | evidence |
 
 ## Known limitations
-
-- Classification only for now (binary, and multiclass with up to 50 classes).
-- No authentication yet (see [Security](#security)).
-- Latency figures are in-process measurements on the machine that ran the job, not network latency.
-- The demo dataset is small (114 holdout rows), so metric differences between models are mostly within noise.
+- One API process runs the scheduler and the in-memory rate limiter. Running several replicas
+  needs a leader lock and Redis-backed rate limits.
+- Only classification models are supported, and serving runs in-process; there is no
+  Kubernetes or KServe path.
+- No real-LLM benchmark numbers are published, because none could be measured without a key.
+- The Copilot's rules planner covers the documented question types. Free-form questions need
+  the LLM planner.
+- Docker images are built in CI but were not built during development, because Docker Hub was
+  unreachable there.
+- The demo data is small (114 holdout rows), so many metric differences are within noise. The
+  case studies say where.
 
 ## License and data
-
-Released under the [MIT License](LICENSE).
-
-Demo data: *Breast Cancer Wisconsin (Diagnostic)*, W. Wolberg, O. Mangasarian, N. Street and W. Street, UCI Machine Learning Repository, [doi:10.24432/C5DW2B](https://doi.org/10.24432/C5DW2B), CC BY 4.0.
+MIT. Demo data: *Breast Cancer Wisconsin (Diagnostic)*, UCI Machine Learning Repository,
+[doi:10.24432/C5DW2B](https://doi.org/10.24432/C5DW2B), CC BY 4.0. Drift scenarios are synthetic
+and are labelled as such.

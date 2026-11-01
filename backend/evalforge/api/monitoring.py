@@ -86,6 +86,7 @@ class DriftIn(BaseModel):
     hours: int = Field(24, ge=1, le=24 * 90)
     dataset_version_id: str | None = None
     thresholds: dict[str, float] | None = None
+    since: datetime | None = None
 
 
 @router.post("/drift/reports", status_code=201)
@@ -103,6 +104,7 @@ def create_report(body: DriftIn, p: Engineer, db: Session = Depends(get_db)) -> 
             dataset_version_id=body.dataset_version_id,
             thresholds=body.thresholds,
             actor=p.username,
+            since=body.since,
         )
         db.commit()
     except drift.DriftError as exc:

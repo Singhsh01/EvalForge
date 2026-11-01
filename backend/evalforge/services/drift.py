@@ -129,9 +129,17 @@ def reference_frame(mv: ModelVersion) -> tuple[pd.DataFrame, pd.Series]:
 
 
 def current_from_predictions(
-    db: Session, mv: ModelVersion, environment: str, hours: int, limit: int
+    db: Session,
+    mv: ModelVersion,
+    environment: str,
+    hours: int,
+    limit: int,
+    since: datetime | None = None,
 ) -> tuple[pd.DataFrame, pd.Series | None, list[str]]:
-    since = datetime.now(UTC) - timedelta(hours=hours)
+    window = datetime.now(UTC) - timedelta(hours=hours)
+    if since is not None and since.tzinfo is None:
+        since = since.replace(tzinfo=UTC)
+    since = max(window, since) if since is not None else window
     rows = db.scalars(
         select(PredictionLog)
         .where(
@@ -163,6 +171,7 @@ def build_report(
     dataset_version_id: str | None = None,
     thresholds: dict[str, float] | None = None,
     actor: str = "system",
+    since: datetime | None = None,
 ) -> DriftReport:
     th = {**DEFAULTS, **(thresholds or {})}
     feats = mv.run.feature_columns or []
@@ -172,8 +181,14 @@ def build_report(
     ) as sp:
         ref_X, _ = reference_frame(mv)
         if source == "predictions":
-            cur_X, cur_y, cur_pred = current_from_predictions(db, mv, environment, hours, limit)
-            current_meta = {"environment": environment, "window_hours": hours}
+            cur_X, cur_y, cur_pred = current_from_predictions(
+                db, mv, environment, hours, limit, since
+            )
+            current_meta = {
+                "environment": environment,
+                "window_hours": hours,
+                "since": since.isoformat() if since else None,
+            }
         elif source == "dataset_version":
             dv = db.get(DatasetVersion, dataset_version_id)
             if dv is None:
