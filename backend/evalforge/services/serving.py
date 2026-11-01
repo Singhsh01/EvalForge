@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from evalforge.config import get_settings
 from evalforge.models import Approval, AuditEvent, Deployment, ModelVersion, PredictionLog
+from evalforge.observability import metrics, tracing
 from evalforge.services.auth import Principal
 from evalforge.services.governance import GovernanceError, executor, request_approval
 from evalforge.services.model_cache import load_cached
@@ -334,10 +335,25 @@ def predict(
         if c in numeric:
             X[c] = pd.to_numeric(X[c], errors="coerce")
     model = load_cached(mv.source_uri)
-    t0 = time.perf_counter()
-    preds = [str(p) for p in model.predict(X)]
-    probs = model.predict_proba(X).max(axis=1).tolist() if hasattr(model, "predict_proba") else None
-    ms = (time.perf_counter() - t0) * 1000
+    with tracing.span(
+        "model.predict",
+        {
+            "model.name": name,
+            "model.version": mv.version,
+            "deployment.id": dep.id,
+            "deployment.role": dep.role,
+            "deployment.environment": env,
+            "batch.size": len(instances),
+        },
+    ):
+        t0 = time.perf_counter()
+        preds = [str(p) for p in model.predict(X)]
+        probs = (
+            model.predict_proba(X).max(axis=1).tolist() if hasattr(model, "predict_proba") else None
+        )
+        ms = (time.perf_counter() - t0) * 1000
+    metrics.PREDICTIONS.labels(name, str(mv.version), env, dep.role).inc(len(instances))
+    metrics.INFERENCE_LATENCY.labels(name, env).observe(ms / 1000)
     logs = []
     for i, row in enumerate(instances):
         log = PredictionLog(

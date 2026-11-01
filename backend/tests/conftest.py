@@ -32,6 +32,9 @@ def _clear() -> None:
 
     get_settings.cache_clear()
     limiter.reset()
+    from evalforge.observability import tracing
+
+    tracing.reset()
     model_cache.clear()
     db.reset_caches()
     tracking.configure.cache_clear()

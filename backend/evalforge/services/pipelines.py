@@ -45,6 +45,7 @@ from evalforge.models import (
     TrainingRun,
     VersionStatus,
 )
+from evalforge.observability import metrics, tracing
 from evalforge.services import jobs, registry, serving, tracking
 from evalforge.services.auth import Principal
 from evalforge.services.experiments import create_training_run
@@ -283,7 +284,13 @@ def execute_run(job_id: str) -> dict[str, Any]:
                 st.status, st.attempts = "running", st.attempts + 1
                 st.started_at, st.error = datetime.now(UTC), None
             try:
-                with session_scope() as db:
+                with (
+                    tracing.span(
+                        f"pipeline.step.{step_name}",
+                        {"pipeline.run_id": run_id, "pipeline.step": step_name, "attempt": attempt},
+                    ),
+                    session_scope() as db,
+                ):
                     out = fns[step_name](db, ctx, actor)
                     st = _step(db, run_id, step_name)
                     waiting = out.get("status") == "waiting_approval"
@@ -301,6 +308,7 @@ def execute_run(job_id: str) -> dict[str, Any]:
                         st.status, st.finished_at = "failed", datetime.now(UTC)
                         st.output = {"traceback": traceback.format_exc()[-3000:]}
                 if retryable:
+                    metrics.JOB_RETRIES.labels(step_name).inc()
                     time.sleep(min(2**attempt * 0.1, 2))
                     continue
                 final = "failed"

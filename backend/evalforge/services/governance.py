@@ -25,6 +25,7 @@ KINDS = {
     "canary_promotion",
     "retraining",
     "evaluation",
+    "prompt_release",
 }
 
 Executor = Callable[[Session, Approval, Principal], dict[str, Any]]

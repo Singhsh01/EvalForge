@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from evalforge.db import get_db
 from evalforge.models import Approval, Deployment, ModelVersion, PredictionLog, TrainingRun
-from evalforge.services import registry, serving
+from evalforge.services import drift, jobs, registry, serving  # noqa: F401  (drift registers an executor)
 from evalforge.services.auth import Principal, require
 from evalforge.services.governance import GovernanceError, decide, request_approval
 
@@ -220,6 +220,12 @@ def decide_approval(
     except (GovernanceError, PermissionError) as exc:
         db.rollback()
         raise _err(exc) from exc
+    # Executors that start background work return a job id; submit only after commit so
+    # the worker can see the rows it needs.
+    job_id = (a.result or {}).get("submit_job_id")
+    if a.status == "executed" and job_id:
+        jobs.submit(job_id)
+        db.refresh(a)
     return appr_out(a)
 
 

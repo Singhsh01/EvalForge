@@ -32,8 +32,9 @@ def test_continuous_training_pipeline_to_approval(client, churn_csv):
     ds = upload(client, churn_csv)
     vid = ds["versions"][0]["id"]
     eng = as_user(client, "engineer")
-    run = trigger(client, {"dataset_version_id": vid, "algorithm": "logistic_regression",
-                           "cv_folds": 3}, eng)
+    run = trigger(
+        client, {"dataset_version_id": vid, "algorithm": "logistic_regression", "cv_folds": 3}, eng
+    )
     s = steps(run)
     assert run["status"] == "awaiting_approval", run
     assert [x["status"] for x in run["steps"]] == ["succeeded"] * 6 + ["waiting_approval"]
@@ -90,8 +91,15 @@ def test_transient_failure_is_retried_and_failed_run_resumes(client, churn_csv, 
 
     patched = [(n, broken if n == "register" else f, d) for n, f, d in original]
     monkeypatch.setitem(pipelines.PIPELINES, "continuous_training", patched)
-    failed = trigger(client, {"dataset_version_id": vid, "max_retries": 0,
-                              "request_promotion": False, "deploy_to_staging": False})
+    failed = trigger(
+        client,
+        {
+            "dataset_version_id": vid,
+            "max_retries": 0,
+            "request_promotion": False,
+            "deploy_to_staging": False,
+        },
+    )
     assert failed["status"] == "failed"
     train_run = steps(failed)["train"]["output"]["run_id"]
     monkeypatch.setitem(pipelines.PIPELINES, "continuous_training", original)
@@ -105,9 +113,14 @@ def test_transient_failure_is_retried_and_failed_run_resumes(client, churn_csv, 
 
 def test_schedules_trigger_when_due(client, churn_csv):
     ds = upload(client, churn_csv)
-    body = {"config": {"dataset_version_id": ds["versions"][0]["id"],
-                       "request_promotion": False, "deploy_to_staging": False},
-            "interval_minutes": 60}
+    body = {
+        "config": {
+            "dataset_version_id": ds["versions"][0]["id"],
+            "request_promotion": False,
+            "deploy_to_staging": False,
+        },
+        "interval_minutes": 60,
+    }
     assert client.post("/api/pipelines/schedules", json=body).status_code == 201
     first = client.post("/api/pipelines/schedules/tick").json()["triggered"]
     assert len(first) == 1

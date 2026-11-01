@@ -61,6 +61,7 @@ def upgrade() -> None:
         sa.Column("kind", sa.String(length=16), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("cases", sa.JSON(), nullable=False),
+        sa.Column("corpus", sa.JSON(), nullable=True),
         sa.Column("evaluators", sa.JSON(), nullable=False),
         sa.Column("gates", sa.JSON(), nullable=False),
         sa.Column("sha256", sa.String(length=64), nullable=False),

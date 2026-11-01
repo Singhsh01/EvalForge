@@ -393,6 +393,7 @@ class EvalSuite(Base):
     kind: Mapped[str] = mapped_column(String(16))  # prompt | rag | agent
     description: Mapped[str] = mapped_column(Text, default="")
     cases: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
+    corpus: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     evaluators: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
     gates: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     sha256: Mapped[str] = mapped_column(String(64))
