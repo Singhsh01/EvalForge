@@ -156,27 +156,32 @@ Implemented features and their tests, plus what is still planned:
 - **Implemented and verified:** auth and RBAC, registry, gates, approvals, canary and rollback,
   pipelines, evaluation engine, tracing and metrics, drift and incidents, the Copilot, and all
   15 UI modules.
-- **Implemented but not verified with a live LLM:** provider calls, prompt evaluations and the
-  LLM judge, because no API key was available.
+- **Implemented but not verified with a live LLM:** provider calls, prompt evaluations, the
+  LLM judge and the LLM planner. A benchmark harness for local models exists (`make llm-benchmark`);
+  no valid real-model run has been recorded yet.
 - **Deferred, with reasons in ADRs:** Prefect, DVC, Evidently, LangGraph, KServe, SSO.
 
 ## Testing
 
 | Suite | Result |
 |---|---|
-| Backend: 55 tests (unit, API contract, integration, security, pipelines, LLMOps, observability, drift, Copilot) | ✅ SQLite · ✅ PostgreSQL |
-| Lint (ruff), migration-drift check | ✅ |
-| Frontend: type check and production build (19 routes) | ✅ |
-| Browser end-to-end smoke (sign-in, 15 modules, live Copilot investigation, auth redirect) | ✅ |
-| End-to-end case studies through the API (`enterprise_demo`) | ✅ full profile · ✅ lite profile |
+| Backend: 97 tests (unit, API contract, integration, security attacks, Copilot robustness, resilience/fault injection, statistics) | ✅ SQLite · ✅ PostgreSQL |
+| Lint (ruff), bandit, migration-drift check, `npm audit` | ✅ |
+| Frontend: 24 component tests (Vitest), type check, production build | ✅ |
+| Browser e2e: smoke across 15 modules + real operations (two-person production rollback, deploy/rollback, viewer read-only) | ✅ |
+| End-to-end case studies through the API (`enterprise_demo`) | ✅ |
+| Load test (`make perf`), classic-ML benchmark on 3 public datasets (`make ml-benchmark`) | measured — [results](docs/results) |
+| Real-LLM benchmark (`make llm-benchmark`, local Ollama) | harness ready; **no valid run yet** |
 
-Details and commands: [docs/results/test-report.md](docs/results/test-report.md).
+An independent-style [engineering audit](docs/audit/AUDIT-REPORT.md) found and fixed 20 issues
+(including a model-artifact code-execution path and a rate-limit bypass), each with a regression test,
+and documents what remains open. Details and commands: [docs/results/test-report.md](docs/results/test-report.md).
 
 ## Documentation
 
 | | |
 |---|---|
-| [Architecture](docs/architecture.md) · [ADRs](docs/adr) · [Roadmap / feature matrix](docs/roadmap.md) | design |
+| [Architecture](docs/architecture.md) · [ADRs](docs/adr) · [Capability matrix](docs/roadmap.md) · [Audit report](docs/audit/AUDIT-REPORT.md) | design |
 | [Deployment & rollback](docs/guides/deployment-and-rollback.md) · [MLOps pipelines](docs/guides/mlops-pipelines.md) · [Database migrations](docs/guides/database-migrations.md) | operate |
 | [Evaluation methodology](docs/guides/evaluation-methodology.md) · [Copilot](docs/guides/copilot.md) · [Observability](docs/guides/observability.md) · [Security](docs/guides/security.md) · [Visual assets](docs/guides/visual-assets.md) | understand |
 | [API reference](docs/guides/api-reference.md) (83 operations) · [OpenAPI](docs/openapi.json) | integrate |
@@ -187,13 +192,16 @@ Details and commands: [docs/results/test-report.md](docs/results/test-report.md)
   needs a leader lock and Redis-backed rate limits.
 - Only classification models are supported, and serving runs in-process; there is no
   Kubernetes or KServe path.
-- No real-LLM benchmark numbers are published, because none could be measured without a key.
+- No real-LLM benchmark numbers are published yet (the harness is ready; see the audit report).
+- Large-batch inference tail latency under concurrency is a known open issue on SQLite (audit PERF-04).
+- Session tokens live in `localStorage` and there is no CSP; no SSO/MFA (audit §5).
 - The Copilot's rules planner covers the documented question types. Free-form questions need
   the LLM planner.
 - Docker images are built in CI but were not built during development, because Docker Hub was
   unreachable there.
-- The demo data is small (114 holdout rows), so many metric differences are within noise. The
-  case studies say where.
+- The demo data is small (114 holdout rows), so many metric differences are within noise. Every F1
+  now carries a bootstrap 95% interval and the gate reports whether a champion/challenger difference
+  is distinguishable; the case studies say where it is not.
 
 ## License and data
 MIT. Demo data: *Breast Cancer Wisconsin (Diagnostic)*, UCI Machine Learning Repository,
