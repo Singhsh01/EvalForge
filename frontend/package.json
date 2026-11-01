@@ -11,7 +11,8 @@
     "brand:list": "node scripts/brand.mjs list",
     "brand:cost": "node scripts/brand.mjs cost",
     "brand:generate": "node scripts/brand.mjs generate",
-    "brand:optimize": "node scripts/optimize-brand.mjs"
+    "brand:optimize": "node scripts/optimize-brand.mjs",
+    "record:walkthrough": "node e2e/record-walkthrough.mjs ../var/walkthrough"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "5.3.0",

@@ -1,3 +1,5 @@
+// Records the README walkthrough: drives the running app (API + web, demo data loaded) with real
+// clicks and saves CDP screencast frames + frames.json. Usage: node e2e/record-walkthrough.mjs <out-dir>
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync } from "node:fs";
 const OUT = process.argv[2]; mkdirSync(OUT, { recursive: true });
