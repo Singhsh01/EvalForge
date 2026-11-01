@@ -33,6 +33,51 @@ def _f(x: float) -> float:
     return float(round(float(x), 6))
 
 
+BOOTSTRAP_RESAMPLES = 1000
+
+
+def _f1_codes(yc: np.ndarray, pc: np.ndarray, k: int, pos: int | None) -> float:
+    """F1 from integer-coded labels: positive-class F1 when ``pos`` is set (binary),
+    otherwise macro F1 over all k labels (matches sklearn with zero_division=0)."""
+    cm = np.bincount(yc * k + pc, minlength=k * k).reshape(k, k)
+    tp = np.diag(cm).astype(float)
+    denom = 2 * tp + (cm.sum(0) - tp) + (cm.sum(1) - tp)
+    f1 = np.divide(2 * tp, denom, out=np.zeros_like(tp), where=denom > 0)
+    return float(f1[pos]) if pos is not None else float(f1.mean())
+
+
+def bootstrap_f1(
+    y_true: Any,
+    preds: list[Any],
+    labels: list[str],
+    n: int = BOOTSTRAP_RESAMPLES,
+    seed: int = 0,
+) -> np.ndarray:
+    """F1 of each prediction vector on ``n`` shared bootstrap resamples of the rows.
+
+    Returns an array of shape (n, len(preds)). Resamples are *paired*: every model is
+    scored on the same resampled rows, so differences between columns carry only the
+    uncertainty of the difference, not of the shared test set."""
+    idx = {lbl: i for i, lbl in enumerate(labels)}
+    y = np.asarray([idx.get(str(v), -1) for v in y_true])
+    ps = [np.asarray([idx.get(str(v), -1) for v in p]) for p in preds]
+    keep = (y >= 0) & np.all([p >= 0 for p in ps], axis=0)
+    y, ps = y[keep], [p[keep] for p in ps]
+    k = len(labels)
+    pos = 1 if k == 2 else None
+    rng = np.random.default_rng(seed)
+    out = np.empty((n, len(ps)))
+    for b in range(n):
+        r = rng.integers(0, len(y), len(y))
+        for j, p in enumerate(ps):
+            out[b, j] = _f1_codes(y[r], p[r], k, pos)
+    return out
+
+
+def ci95(samples: np.ndarray) -> list[float]:
+    return [_f(float(np.percentile(samples, 2.5))), _f(float(np.percentile(samples, 97.5)))]
+
+
 def classification_metrics(
     model: Pipeline, X: pd.DataFrame, y: pd.Series, labels: list[str]
 ) -> tuple[dict[str, float], dict[str, Any]]:
@@ -53,6 +98,11 @@ def classification_metrics(
         "f1": _f(f1_score(y, y_pred, **kw)),
         "f1_weighted": _f(f1_score(y, y_pred, average="weighted", zero_division=0)),
     }
+    # Sampling uncertainty of F1 on this test set (percentile bootstrap, audit BEN-01):
+    # small holdouts make point estimates look more precise than they are.
+    if len(y) >= 10:
+        lo, hi = ci95(bootstrap_f1(y.to_numpy(), [y_pred], labels)[:, 0])
+        metrics["f1_ci95_low"], metrics["f1_ci95_high"] = lo, hi
     report: dict[str, Any] = {
         "labels": labels,
         "positive_label": pos,

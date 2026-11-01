@@ -107,6 +107,32 @@ def score_on(mv: ModelVersion, version: DatasetVersion) -> dict[str, float]:
     return metrics
 
 
+def paired_delta(champ: ModelVersion, cand: ModelVersion) -> dict[str, Any]:
+    """Paired bootstrap of candidate − champion F1 on the candidate's holdout rows."""
+    X, y = holdout_frame(cand.run.dataset_version)
+    preds = []
+    for m in (cand, champ):
+        feats = m.run.feature_columns or []
+        preds.append(
+            pd.Series(load_cached(m.source_uri, m.artifact_sha256).predict(X[feats])).astype(str)
+        )
+    labels = sorted(
+        {str(v) for v in y.unique()}
+        | set((cand.run.report or {}).get("labels", []))
+        | set((champ.run.report or {}).get("labels", []))
+    )
+    samples = M.bootstrap_f1(y.astype(str).to_numpy(), preds, labels)
+    lo, hi = M.ci95(samples[:, 0] - samples[:, 1])
+    return {
+        "delta_f1_ci95": [lo, hi],
+        "candidate_f1_ci95": M.ci95(samples[:, 0]),
+        "champion_f1_ci95": M.ci95(samples[:, 1]),
+        "distinguishable": not (lo <= 0 <= hi),
+        "n_rows": len(y),
+        "bootstrap_resamples": len(samples),
+    }
+
+
 def evaluate_gate(db: Session, mv: ModelVersion) -> dict[str, Any]:
     s = get_settings()
     m = mv.run.metrics or {}
@@ -141,6 +167,7 @@ def evaluate_gate(db: Session, mv: ModelVersion) -> dict[str, Any]:
     if champ is not None and champ.id != mv.id:
         champ_metrics = score_on(champ, mv.run.dataset_version)
         delta = f1 - champ_metrics["f1"]
+        paired = paired_delta(champ, mv)
         comparison = {
             "champion_id": champ.id,
             "champion_version": champ.version,
@@ -149,12 +176,24 @@ def evaluate_gate(db: Session, mv: ModelVersion) -> dict[str, Any]:
             "candidate_f1": round(f1, 6),
             "delta_f1": round(delta, 6),
             "champion_metrics": champ_metrics,
+            **paired,
         }
         check(
             "no_regression_vs_champion",
             delta >= -s.gate_max_f1_regression,
             f"candidate F1 {f1:.4f} vs champion v{champ.version} {champ_metrics['f1']:.4f} "
-            f"on the same holdout (Δ {delta:+.4f}, tolerance {s.gate_max_f1_regression})",
+            f"on the same holdout (Δ {delta:+.4f}, paired 95% CI "
+            f"[{paired['delta_f1_ci95'][0]:+.4f}, {paired['delta_f1_ci95'][1]:+.4f}], "
+            f"tolerance {s.gate_max_f1_regression})",
+        )
+        check(
+            "difference_is_distinguishable",
+            paired["distinguishable"],
+            "the paired 95% interval of ΔF1 excludes 0"
+            if paired["distinguishable"]
+            else f"ΔF1 is within sampling noise on {paired['n_rows']} holdout rows; "
+            "the comparison cannot tell these models apart",
+            blocking=False,
         )
     passed = all(c["passed"] for c in checks if c["blocking"])
     return {"passed": passed, "checks": checks, "champion_comparison": comparison}
