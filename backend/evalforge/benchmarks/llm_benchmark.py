@@ -332,6 +332,26 @@ def main(argv: list[str] | None = None) -> int:
             "EVALFORGE_OPENAI_BASE_URL=http://localhost:11434/v1"
         )
         return 2
+    # Preflight: an unreachable endpoint must abort, not produce a file that reads like a
+    # 0 % result (audit BEN-03: the first local run did exactly that).
+    base = prov[pname].get("base_url")
+    if pname == "openai" and base:
+        try:
+            listed = httpx.get(f"{base.rstrip('/')}/models", timeout=10).json()
+            ids = {m.get("id") for m in listed.get("data", [])}
+        except Exception as exc:
+            log(
+                f"model endpoint {base} is not reachable ({type(exc).__name__}: {exc}). "
+                "Is Ollama running? Try: ollama serve   (or open the Ollama app)"
+            )
+            return 3
+        wanted = a.model.split(":", 1)[1]
+        if ids and wanted not in ids:
+            log(
+                f"model '{wanted}' is not available at {base}; available: {sorted(ids)}. "
+                f"Try: ollama pull {wanted}"
+            )
+            return 3
     n = 5 if a.quick else None
     ext, math_cases = extraction_cases(n or 40), arithmetic_cases(n or 30)
     corpus, rag_cases = rag_suite(n or 20)
@@ -443,8 +463,17 @@ def main(argv: list[str] | None = None) -> int:
             results["suites"]["copilot-llm-planner"] = describe(run)
 
     results["finished_at"] = datetime.now(UTC).isoformat()
+    errored = {k: v["errors"] for k, v in results["suites"].items() if v["errors"]}
+    results["valid"] = not errored
+    if errored:
+        results["invalid_reason"] = (
+            f"cases errored (infrastructure, not model quality): {errored}; "
+            "pass rates in this file are not model results"
+        )
+        log("WARNING: " + results["invalid_reason"])
     slug = re.sub(r"[^a-z0-9]+", "-", a.model.lower()).strip("-")
-    out = Path(a.out) / f"llm-benchmark-{slug}{'-quick' if a.quick else ''}.json"
+    suffix = ("-quick" if a.quick else "") + ("" if results["valid"] else "-INVALID")
+    out = Path(a.out) / f"llm-benchmark-{slug}{suffix}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2))
     log(f"wrote {out}")

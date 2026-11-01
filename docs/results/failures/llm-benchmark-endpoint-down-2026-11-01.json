@@ -1,0 +1,557 @@
+{
+  "model": "openai:qwen2.5:3b",
+  "started_at": "2026-11-01T20:44:27.126957+00:00",
+  "seed": 20261101,
+  "quick": false,
+  "suites": {
+    "bench-extraction": {
+      "suite": "bench-extraction@v1",
+      "run_id": "bca46449ae20494f97a88bcb27062e26",
+      "status": "succeeded",
+      "cases": 40,
+      "passed": 0,
+      "errors": 40,
+      "pass_rate": 0.0,
+      "pass_rate_ci95": [
+        0.0,
+        0.0876
+      ],
+      "evaluator_means": {},
+      "evaluator_mean_ci95": {},
+      "latency_ms": {
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      },
+      "tokens": {
+        "input": 0,
+        "output": 0
+      },
+      "output_tokens_per_s": null,
+      "cost_usd": 0,
+      "failures": [
+        {
+          "case_id": "ext-000",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-001",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-002",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-003",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-004",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-005",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-006",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-007",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-008",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-009",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-010",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-011",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-012",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-013",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "ext-014",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        }
+      ]
+    },
+    "bench-arithmetic": {
+      "suite": "bench-arithmetic@v1",
+      "run_id": "f7d2e8f63e404f2cab071ea2d6128380",
+      "status": "succeeded",
+      "cases": 30,
+      "passed": 0,
+      "errors": 30,
+      "pass_rate": 0.0,
+      "pass_rate_ci95": [
+        0.0,
+        0.1135
+      ],
+      "evaluator_means": {},
+      "evaluator_mean_ci95": {},
+      "latency_ms": {
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      },
+      "tokens": {
+        "input": 0,
+        "output": 0
+      },
+      "output_tokens_per_s": null,
+      "cost_usd": 0,
+      "failures": [
+        {
+          "case_id": "math-000",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-001",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-002",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-003",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-004",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-005",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-006",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-007",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-008",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-009",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-010",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-011",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-012",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-013",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "math-014",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        }
+      ]
+    },
+    "bench-rag": {
+      "suite": "bench-rag@v1",
+      "run_id": "e898a873d92d4f3ea66f0c57f7ac42d4",
+      "status": "succeeded",
+      "cases": 20,
+      "passed": 0,
+      "errors": 20,
+      "pass_rate": 0.0,
+      "pass_rate_ci95": [
+        0.0,
+        0.1611
+      ],
+      "evaluator_means": {},
+      "evaluator_mean_ci95": {},
+      "latency_ms": {
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      },
+      "tokens": {
+        "input": 0,
+        "output": 0
+      },
+      "output_tokens_per_s": null,
+      "cost_usd": 0,
+      "failures": [
+        {
+          "case_id": "rag-000",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-001",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-002",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-003",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-004",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-005",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-006",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-007",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-008",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-009",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-010",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-011",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-012",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-013",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        },
+        {
+          "case_id": "rag-014",
+          "error": "ConnectError: [Errno 61] Connection refused",
+          "output": "",
+          "scores": {}
+        }
+      ]
+    },
+    "copilot-llm-planner": {
+      "suite": "copilot-investigations@v1",
+      "run_id": "607a4bc1d0094940a386596254d3dee0",
+      "status": "succeeded",
+      "cases": 5,
+      "passed": 0,
+      "errors": 0,
+      "pass_rate": 0.0,
+      "pass_rate_ci95": [
+        0.0,
+        0.4345
+      ],
+      "evaluator_means": {
+        "tool_selection": 0.0,
+        "task_completion": 0.0,
+        "agent_efficiency": 1.0
+      },
+      "evaluator_mean_ci95": {
+        "tool_selection": [
+          0.0,
+          0.0
+        ],
+        "task_completion": [
+          0.0,
+          0.0
+        ],
+        "agent_efficiency": [
+          1.0,
+          1.0
+        ]
+      },
+      "latency_ms": {
+        "p50": 17.3,
+        "p95": 23.7,
+        "p99": 24.9,
+        "max": 25.2
+      },
+      "tokens": {
+        "input": 0,
+        "output": 0
+      },
+      "output_tokens_per_s": null,
+      "cost_usd": 0,
+      "failures": [
+        {
+          "case_id": "dataset",
+          "error": null,
+          "output": "No evidence found for this question.",
+          "scores": {
+            "tool_selection": {
+              "expected": [
+                "diff_dataset_versions"
+              ],
+              "used": [],
+              "missing": [
+                "diff_dataset_versions"
+              ],
+              "unexpected": [],
+              "forbidden_used": [],
+              "attempted_but_failed": [],
+              "precision": 0.0,
+              "recall": 0.0
+            },
+            "task_completion": {
+              "status": "failed",
+              "missing_facts": [
+                "Mean holdout F1 by dataset version"
+              ]
+            }
+          }
+        },
+        {
+          "case_id": "deploy",
+          "error": null,
+          "output": "No evidence found for this question.",
+          "scores": {
+            "tool_selection": {
+              "expected": [
+                "get_deployments"
+              ],
+              "used": [],
+              "missing": [
+                "get_deployments"
+              ],
+              "unexpected": [],
+              "forbidden_used": [],
+              "attempted_but_failed": [],
+              "precision": 0.0,
+              "recall": 0.0
+            },
+            "task_completion": {
+              "status": "failed",
+              "missing_facts": [
+                "Deployment"
+              ]
+            }
+          }
+        },
+        {
+          "case_id": "drift",
+          "error": null,
+          "output": "No evidence found for this question.",
+          "scores": {
+            "tool_selection": {
+              "expected": [
+                "get_drift_reports",
+                "list_incidents"
+              ],
+              "used": [],
+              "missing": [
+                "get_drift_reports",
+                "list_incidents"
+              ],
+              "unexpected": [],
+              "forbidden_used": [],
+              "attempted_but_failed": [],
+              "precision": 0.0,
+              "recall": 0.0
+            },
+            "task_completion": {
+              "status": "failed",
+              "missing_facts": [
+                "Drift report"
+              ]
+            }
+          }
+        },
+        {
+          "case_id": "recommend",
+          "error": null,
+          "output": "No evidence found for this question.",
+          "scores": {
+            "tool_selection": {
+              "expected": [
+                "query_mlflow_runs",
+                "recommend_candidate"
+              ],
+              "used": [],
+              "missing": [
+                "query_mlflow_runs",
+                "recommend_candidate"
+              ],
+              "unexpected": [],
+              "forbidden_used": [],
+              "attempted_but_failed": [],
+              "precision": 0.0,
+              "recall": 0.0
+            },
+            "task_completion": {
+              "status": "failed",
+              "missing_facts": [
+                "Pareto front"
+              ]
+            }
+          }
+        },
+        {
+          "case_id": "regression",
+          "error": null,
+          "output": "No evidence found for this question.",
+          "scores": {
+            "tool_selection": {
+              "expected": [
+                "compare_runs",
+                "diff_dataset_versions",
+                "query_mlflow_runs"
+              ],
+              "used": [],
+              "missing": [
+                "compare_runs",
+                "diff_dataset_versions",
+                "query_mlflow_runs"
+              ],
+              "unexpected": [],
+              "forbidden_used": [],
+              "attempted_but_failed": [],
+              "precision": 0.0,
+              "recall": 0.0
+            },
+            "task_completion": {
+              "status": "failed",
+              "missing_facts": [
+                "Training data changed"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "finished_at": "2026-11-01T20:45:07.498314+00:00",
+  "valid": false,
+  "invalid_reason": "Kept as evidence for audit findings BEN-03/BEN-04: the Ollama endpoint was not running, every case failed with ConnectError, yet the original benchmark wrote this as an ordinary result file and the agent suite scored 0% with errors=0. NOT a model result."
+}

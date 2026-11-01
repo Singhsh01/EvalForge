@@ -242,3 +242,57 @@ def test_cancellation_stops_a_running_llm_session(client, scripted):
     cfg = scripted(cancel_after_two, max_steps=10)
     s = ask(client, "run until cancelled", cfg)
     assert s["status"] == "cancelled" and s["tool_calls"] <= 2
+
+
+def test_agent_eval_counts_planner_outage_as_error_not_as_model_failure(client, scripted):
+    """BEN-04: with the model endpoint down, every agent case scored 0 % with errors=0,
+    which reads as 'the agent chose no tools' instead of 'the run did not happen'."""
+
+    def down(system, user):
+        raise ProviderError("ConnectError: [Errno 61] Connection refused")
+
+    cfg = scripted(down)
+    suite = client.post(
+        "/api/evals/suites",
+        json={
+            "name": "outage-check",
+            "kind": "agent",
+            "cases": [{"id": "c1", "question": "overview", "expected_tools": ["list_incidents"]}],
+            "evaluators": [{"type": "tool_selection"}, {"type": "task_completion"}],
+        },
+    ).json()
+    run = client.post(
+        "/api/evals/runs",
+        json={"suite_id": suite["id"], "subject": {"type": "agent", "agent_config_id": cfg}},
+    ).json()
+    got = client.get(f"/api/evals/runs/{run['id']}").json()
+    assert got["summary"]["errors"] == 1 and got["summary"]["passed"] == 0
+    assert "Connection refused" in got["results"][0]["error"]
+
+
+def test_llm_benchmark_refuses_to_run_against_unreachable_endpoint(monkeypatch):
+    """BEN-03: the benchmark wrote a results file that looked like a 0 % model result
+    when the endpoint was down. It must abort before running anything."""
+    import httpx
+
+    from evalforge.benchmarks import llm_benchmark as B
+
+    class FakeApi:
+        def __init__(self, *a, **k):
+            pass
+
+        def get(self, path, **kw):
+            assert path == "/api/llm/providers"
+            return {
+                "providers": [
+                    {"provider": "openai", "configured": True, "base_url": "http://127.0.0.1:9/v1"}
+                ]
+            }
+
+    monkeypatch.setattr(B, "Api", FakeApi)
+
+    def refuse(*a, **k):
+        raise httpx.ConnectError("Connection refused")
+
+    monkeypatch.setattr(httpx, "get", refuse)
+    assert B.main(["--model", "openai:qwen2.5:3b", "--out", "/nonexistent"]) == 3

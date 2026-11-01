@@ -255,6 +255,11 @@ def run_subject(
         res = run_agent(
             db, case["question"], subject["agent_config_id"], actor="evaluator", persist=False
         )
+        if res["status"] == "failed":
+            # The planner itself crashed (e.g. model endpoint unreachable). Tool failures no
+            # longer fail a session, so this is an infrastructure error, not an agent
+            # decision, and must not be scored as "used no tools" (audit BEN-04).
+            raise EvalError(f"agent session failed: {res.get('error')}")
         return {
             "text": res["report"].get("answer", ""),
             "status": res["status"],
