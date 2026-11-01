@@ -254,3 +254,32 @@ def test_approval_executor_failure_leaves_no_partial_state(client, churn_csv):
     done = approve(client, pr["approval"]["id"]).json()
     assert done["status"] == "failed" and "health" in done["result"]["error"].lower()
     assert _active("churn", "production") == 0
+
+
+def test_single_pass_serving_matches_pipeline_predict(client, churn_csv):
+    """PERF-01 changed serving to derive labels from predict_proba (one pipeline pass);
+    the labels must equal Pipeline.predict exactly."""
+    import pandas as pd
+
+    from evalforge.db import session_scope
+    from evalforge.models import ModelVersion
+    from evalforge.services.model_cache import load_cached
+
+    (mv1, _), eng = _two_versions(client, churn_csv)
+    client.post(
+        "/api/deployments",
+        json={"model_version_id": mv1["id"], "environment": "staging"},
+        headers=eng,
+    )
+    rows = _rows(60, seed=21)
+    out = client.post("/api/serve/churn/predict?environment=staging", json={"instances": rows})
+    served = [p["label"] for p in out.json()["predictions"]]
+    with session_scope() as db:
+        mv = db.get(ModelVersion, mv1["id"])
+        feats = mv.run.feature_columns
+        model = load_cached(mv.source_uri, mv.artifact_sha256)
+    X = pd.DataFrame([{c: r.get(c) for c in feats} for r in rows], columns=feats)
+    for c in X.columns:
+        if X[c].map(lambda v: isinstance(v, int | float) or v is None).all():
+            X[c] = pd.to_numeric(X[c], errors="coerce")
+    assert served == [str(p) for p in model.predict(X)]

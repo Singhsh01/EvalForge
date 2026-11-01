@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
+import time
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from datetime import UTC, datetime
@@ -195,9 +196,21 @@ def reset() -> None:
         _provider = None
 
 
-def flush() -> None:
-    if _provider is not None:
-        _provider.force_flush(5000)
+_last_flush = 0.0
+
+
+def flush(max_age_s: float = 0.0) -> None:
+    """Export buffered spans now. With ``max_age_s``, skip if a flush ran that recently:
+    read endpoints call this on every request, and under load forcing the exporter each
+    time serialised them behind span writes (audit PERF-03)."""
+    global _last_flush
+    if _provider is None:
+        return
+    now = time.monotonic()
+    if max_age_s and now - _last_flush < max_age_s:
+        return
+    _last_flush = now
+    _provider.force_flush(5000)
 
 
 def tracer() -> trace.Tracer:

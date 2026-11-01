@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import time
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
 from evalforge.config import get_settings
@@ -321,6 +322,21 @@ def route(stable: Deployment | None, canary: Deployment | None, request_id: str)
     return canary if bucket < canary.traffic_percent else stable
 
 
+_META: dict[str, tuple[list[str], list[str], dict[str, Any]]] = {}
+
+
+def _model_meta(mv: ModelVersion) -> tuple[list[str], list[str], dict[str, Any]]:
+    """Feature list, numeric columns and labels of a model version. Immutable per version,
+    so cached: serving no longer lazy-loads run and dataset rows on every request."""
+    meta = _META.get(mv.id)
+    if meta is None:
+        feats = list(mv.run.feature_columns or [])
+        kinds = {c["name"]: c["kind"] for c in mv.run.dataset_version.schema_}
+        numeric = [c for c in feats if kinds.get(c) == "numeric"]
+        meta = _META[mv.id] = (feats, numeric, {"version": mv.version, "name": mv.name})
+    return meta
+
+
 def predict(
     db: Session,
     name: str,
@@ -337,18 +353,24 @@ def predict(
         if dep is None:
             raise LookupError(f"v{version} is not deployed in {env}")
     else:
-        stable, canary = stable_and_canary(db, name, env)
+        stable = next((d for d in deps if d.role == "stable"), None)
+        canary = next((d for d in deps if d.role == "canary"), None)
         dep = route(stable, canary, request_id)
     mv = dep.model_version
-    feats = mv.run.feature_columns or []
+    feats, numeric, _ = _model_meta(mv)
     missing = sorted({c for row in instances for c in feats if c not in row})
     if missing:
         raise GovernanceError(f"Missing required features: {missing[:20]}")
-    X = pd.DataFrame([{c: row.get(c) for c in feats} for row in instances])
-    numeric = {c["name"] for c in mv.run.dataset_version.schema_ if c["kind"] == "numeric"}
+    # Build columns already converted: assigning converted columns into an existing frame
+    # costs one block split per column (the serving profile's top pandas cost).
+    num = set(numeric)
+    cols: dict[str, Any] = {}
     for c in feats:
-        if c in numeric:
-            X[c] = pd.to_numeric(X[c], errors="coerce")
+        vals = [row.get(c) for row in instances]
+        cols[c] = (
+            pd.to_numeric(pd.Series(vals, dtype=object), errors="coerce") if c in num else vals
+        )
+    X = pd.DataFrame(cols, columns=feats)
     model = load_cached(mv.source_uri, mv.artifact_sha256)
     with tracing.span(
         "model.predict",
@@ -362,28 +384,34 @@ def predict(
         },
     ):
         t0 = time.perf_counter()
-        preds = [str(p) for p in model.predict(X)]
-        probs = (
-            model.predict_proba(X).max(axis=1).tolist() if hasattr(model, "predict_proba") else None
-        )
+        if hasattr(model, "predict_proba"):
+            # One pass through the pipeline: labels are the arg-max of the probabilities
+            # (identical to Pipeline.predict for these classifiers).
+            proba = model.predict_proba(X)
+            preds = [str(p) for p in model.classes_[proba.argmax(axis=1)]]
+            probs: list[float] | None = proba.max(axis=1).tolist()
+        else:
+            preds, probs = [str(p) for p in model.predict(X)], None
         ms = (time.perf_counter() - t0) * 1000
     metrics.PREDICTIONS.labels(name, str(mv.version), env, dep.role).inc(len(instances))
     metrics.INFERENCE_LATENCY.labels(name, env).observe(ms / 1000)
-    logs = []
-    for i, row in enumerate(instances):
-        log = PredictionLog(
-            request_id=request_id,
-            deployment_id=dep.id,
-            model_version_id=mv.id,
-            environment=env,
-            inputs={c: _json_safe(row.get(c)) for c in feats},
-            prediction=preds[i],
-            probability=probs[i] if probs else None,
-            latency_ms=ms / len(instances),
-        )
-        db.add(log)
-        logs.append(log)
-    db.flush()
+    now = datetime.now(UTC)
+    rows = [
+        {
+            "id": uuid.uuid4().hex,
+            "request_id": request_id,
+            "deployment_id": dep.id,
+            "model_version_id": mv.id,
+            "environment": env,
+            "inputs": {c: _json_safe(row.get(c)) for c in feats},
+            "prediction": preds[i],
+            "probability": probs[i] if probs else None,
+            "latency_ms": ms / len(instances),
+            "created_at": now,
+        }
+        for i, row in enumerate(instances)
+    ]
+    db.execute(insert(PredictionLog), rows)  # one executemany instead of N ORM flushes
     return {
         "request_id": request_id,
         "model": name,
@@ -393,7 +421,7 @@ def predict(
         "environment": env,
         "latency_ms": round(ms, 3),
         "predictions": [
-            {"id": lg.id, "label": p, "probability": round(probs[i], 6) if probs else None}
-            for i, (lg, p) in enumerate(zip(logs, preds, strict=True))
+            {"id": r["id"], "label": p, "probability": round(probs[i], 6) if probs else None}
+            for i, (r, p) in enumerate(zip(rows, preds, strict=True))
         ],
     }

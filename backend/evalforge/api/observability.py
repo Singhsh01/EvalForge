@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from evalforge.db import get_db
@@ -58,22 +58,36 @@ def list_traces(
     limit: int = Query(50, ge=1, le=500),
 ) -> list[dict[str, Any]]:
     """Root spans (one per trace), newest first, with span counts and error flags."""
-    tracing.flush()
-    roots = select(Span).where(Span.parent_id.is_(None))
+    tracing.flush(max_age_s=1.0)
+    roots_q = select(Span).where(Span.parent_id.is_(None))
     if q:
-        roots = roots.where(Span.name.contains(q))
-    roots = roots.order_by(Span.start_time.desc()).limit(limit * 3)
+        roots_q = roots_q.where(Span.name.contains(q))
+    roots = db.scalars(roots_q.order_by(Span.start_time.desc()).limit(limit * 3)).all()
+    # One grouped aggregate for all candidate traces instead of one query per root
+    # (audit PERF-03: up to 150 queries per request).
+    agg = (
+        {
+            tid: (n, int(errs or 0))
+            for tid, n, errs in db.execute(
+                select(
+                    Span.trace_id,
+                    func.count(),
+                    func.sum(case((Span.status == "error", 1), else_=0)),
+                )
+                .where(Span.trace_id.in_({r.trace_id for r in roots}))
+                .group_by(Span.trace_id)
+            ).all()
+        }
+        if roots
+        else {}
+    )
     out = []
-    for r in db.scalars(roots).all():
-        agg = db.execute(
-            select(
-                func.count(), func.sum((Span.status == "error").cast(type_=func.count().type))
-            ).where(Span.trace_id == r.trace_id)
-        ).one()
-        has_error = bool(agg[1]) or r.status == "error"
+    for r in roots:
+        n, errs = agg.get(r.trace_id, (1, 0))
+        has_error = bool(errs) or r.status == "error"
         if status == "error" and not has_error:
             continue
-        out.append(span_out(r) | {"span_count": agg[0], "has_error": has_error})
+        out.append(span_out(r) | {"span_count": n, "has_error": has_error})
         if len(out) >= limit:
             break
     return out
@@ -81,7 +95,7 @@ def list_traces(
 
 @router.get("/traces/{trace_id}")
 def get_trace(trace_id: str, _: Viewer, db: Session = Depends(get_db)) -> dict[str, Any]:
-    tracing.flush()
+    tracing.flush()  # single-trace view: always current
     spans = db.scalars(
         select(Span).where(Span.trace_id == trace_id).order_by(Span.start_time)
     ).all()

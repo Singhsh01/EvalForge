@@ -1,0 +1,279 @@
+{
+  "started_at": "2026-11-01T20:55:16.101945+00:00",
+  "api": "http://localhost:8000",
+  "host": {
+    "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+    "cpus": 2,
+    "python": "3.12.13"
+  },
+  "model": "breast-cancer-wisconsin (production)",
+  "rss_mb_idle": 323.0,
+  "scenarios": {
+    "predict-1": [
+      {
+        "requests": 1000,
+        "concurrency": 1,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 46.6,
+        "latency_ms": {
+          "p50": 18.8,
+          "p95": 30.15,
+          "p99": 68.52,
+          "max": 225.36,
+          "mean": 21.46
+        },
+        "rss_mb_after": 367.5
+      },
+      {
+        "requests": 1000,
+        "concurrency": 4,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 40.0,
+        "latency_ms": {
+          "p50": 92.4,
+          "p95": 180.04,
+          "p99": 287.71,
+          "max": 387.92,
+          "mean": 99.98
+        },
+        "rss_mb_after": 370.3
+      },
+      {
+        "requests": 1000,
+        "concurrency": 16,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 35.1,
+        "latency_ms": {
+          "p50": 403.15,
+          "p95": 831.19,
+          "p99": 1014.95,
+          "max": 1653.74,
+          "mean": 454.41
+        },
+        "rss_mb_after": 385.5
+      }
+    ],
+    "predict-100": [
+      {
+        "requests": 1000,
+        "concurrency": 1,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 28.0,
+        "latency_ms": {
+          "p50": 31.18,
+          "p95": 56.09,
+          "p99": 76.5,
+          "max": 283.24,
+          "mean": 35.71
+        },
+        "rss_mb_after": 393.0
+      },
+      {
+        "requests": 1000,
+        "concurrency": 4,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 26.3,
+        "latency_ms": {
+          "p50": 137.95,
+          "p95": 266.98,
+          "p99": 400.03,
+          "max": 559.91,
+          "mean": 152.01
+        },
+        "rss_mb_after": 395.4
+      },
+      {
+        "requests": 1000,
+        "concurrency": 16,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 22.0,
+        "latency_ms": {
+          "p50": 706.05,
+          "p95": 1236.1,
+          "p99": 1502.62,
+          "max": 2304.33,
+          "mean": 724.44
+        },
+        "rss_mb_after": 429.1
+      }
+    ],
+    "overview": [
+      {
+        "requests": 250,
+        "concurrency": 1,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 70.7,
+        "latency_ms": {
+          "p50": 12.86,
+          "p95": 18.55,
+          "p99": 35.2,
+          "max": 43.13,
+          "mean": 14.12
+        },
+        "rss_mb_after": 429.0
+      },
+      {
+        "requests": 250,
+        "concurrency": 4,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 57.1,
+        "latency_ms": {
+          "p50": 63.62,
+          "p95": 100.42,
+          "p99": 285.17,
+          "max": 356.23,
+          "mean": 69.8
+        },
+        "rss_mb_after": 429.0
+      },
+      {
+        "requests": 250,
+        "concurrency": 16,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 49.1,
+        "latency_ms": {
+          "p50": 315.14,
+          "p95": 492.54,
+          "p99": 595.21,
+          "max": 635.13,
+          "mean": 322.44
+        },
+        "rss_mb_after": 429.1
+      }
+    ],
+    "deployments": [
+      {
+        "requests": 250,
+        "concurrency": 1,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 145.9,
+        "latency_ms": {
+          "p50": 5.89,
+          "p95": 8.29,
+          "p99": 29.5,
+          "max": 62.24,
+          "mean": 6.83
+        },
+        "rss_mb_after": 429.1
+      },
+      {
+        "requests": 250,
+        "concurrency": 4,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 167.8,
+        "latency_ms": {
+          "p50": 21.5,
+          "p95": 44.09,
+          "p99": 59.15,
+          "max": 68.94,
+          "mean": 23.59
+        },
+        "rss_mb_after": 429.1
+      },
+      {
+        "requests": 250,
+        "concurrency": 16,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 179.3,
+        "latency_ms": {
+          "p50": 86.23,
+          "p95": 127.8,
+          "p99": 155.12,
+          "max": 167.78,
+          "mean": 87.56
+        },
+        "rss_mb_after": 429.1
+      }
+    ],
+    "traces": [
+      {
+        "requests": 250,
+        "concurrency": 1,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 47.4,
+        "latency_ms": {
+          "p50": 19.94,
+          "p95": 30.93,
+          "p99": 34.54,
+          "max": 35.92,
+          "mean": 21.08
+        },
+        "rss_mb_after": 429.2
+      },
+      {
+        "requests": 250,
+        "concurrency": 4,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 36.6,
+        "latency_ms": {
+          "p50": 104.0,
+          "p95": 164.83,
+          "p99": 286.13,
+          "max": 330.94,
+          "mean": 108.69
+        },
+        "rss_mb_after": 428.5
+      },
+      {
+        "requests": 250,
+        "concurrency": 16,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 21.9,
+        "latency_ms": {
+          "p50": 712.13,
+          "p95": 1117.66,
+          "p99": 1211.17,
+          "max": 1364.95,
+          "mean": 723.05
+        },
+        "rss_mb_after": 427.6
+      }
+    ]
+  },
+  "rss_mb_peak": 429.2
+}

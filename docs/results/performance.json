@@ -1,0 +1,279 @@
+{
+  "started_at": "2026-11-01T21:15:40.253498+00:00",
+  "api": "http://localhost:8000",
+  "host": {
+    "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+    "cpus": 2,
+    "python": "3.12.13"
+  },
+  "model": "breast-cancer-wisconsin (production)",
+  "rss_mb_idle": 307.3,
+  "scenarios": {
+    "predict-1": [
+      {
+        "requests": 1000,
+        "concurrency": 1,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 63.1,
+        "latency_ms": {
+          "p50": 13.27,
+          "p95": 20.77,
+          "p99": 69.65,
+          "max": 266.03,
+          "mean": 15.81
+        },
+        "rss_mb_after": 345.0
+      },
+      {
+        "requests": 1000,
+        "concurrency": 4,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 61.2,
+        "latency_ms": {
+          "p50": 56.42,
+          "p95": 141.27,
+          "p99": 257.25,
+          "max": 342.04,
+          "mean": 65.22
+        },
+        "rss_mb_after": 345.6
+      },
+      {
+        "requests": 1000,
+        "concurrency": 16,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 54.9,
+        "latency_ms": {
+          "p50": 232.71,
+          "p95": 633.92,
+          "p99": 983.15,
+          "max": 1428.63,
+          "mean": 290.05
+        },
+        "rss_mb_after": 354.9
+      }
+    ],
+    "predict-100": [
+      {
+        "requests": 1000,
+        "concurrency": 1,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 34.2,
+        "latency_ms": {
+          "p50": 24.1,
+          "p95": 50.12,
+          "p99": 74.11,
+          "max": 260.39,
+          "mean": 29.25
+        },
+        "rss_mb_after": 364.2
+      },
+      {
+        "requests": 1000,
+        "concurrency": 4,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 35.2,
+        "latency_ms": {
+          "p50": 82.38,
+          "p95": 277.77,
+          "p99": 624.86,
+          "max": 1493.03,
+          "mean": 113.28
+        },
+        "rss_mb_after": 369.6
+      },
+      {
+        "requests": 1000,
+        "concurrency": 16,
+        "ok": 1000,
+        "status_codes": {
+          "200": 1000
+        },
+        "throughput_rps": 31.5,
+        "latency_ms": {
+          "p50": 188.84,
+          "p95": 1995.73,
+          "p99": 4100.1,
+          "max": 5612.15,
+          "mean": 501.41
+        },
+        "rss_mb_after": 384.9
+      }
+    ],
+    "overview": [
+      {
+        "requests": 250,
+        "concurrency": 1,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 81.0,
+        "latency_ms": {
+          "p50": 11.3,
+          "p95": 16.16,
+          "p99": 32.74,
+          "max": 42.29,
+          "mean": 12.32
+        },
+        "rss_mb_after": 384.9
+      },
+      {
+        "requests": 250,
+        "concurrency": 4,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 67.7,
+        "latency_ms": {
+          "p50": 57.2,
+          "p95": 83.43,
+          "p99": 102.85,
+          "max": 106.32,
+          "mean": 58.8
+        },
+        "rss_mb_after": 384.9
+      },
+      {
+        "requests": 250,
+        "concurrency": 16,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 48.1,
+        "latency_ms": {
+          "p50": 309.5,
+          "p95": 567.79,
+          "p99": 619.43,
+          "max": 647.12,
+          "mean": 328.27
+        },
+        "rss_mb_after": 384.9
+      }
+    ],
+    "deployments": [
+      {
+        "requests": 250,
+        "concurrency": 1,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 139.3,
+        "latency_ms": {
+          "p50": 6.15,
+          "p95": 15.31,
+          "p99": 22.39,
+          "max": 33.72,
+          "mean": 7.15
+        },
+        "rss_mb_after": 384.9
+      },
+      {
+        "requests": 250,
+        "concurrency": 4,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 163.4,
+        "latency_ms": {
+          "p50": 22.65,
+          "p95": 43.0,
+          "p99": 56.31,
+          "max": 66.87,
+          "mean": 24.24
+        },
+        "rss_mb_after": 384.9
+      },
+      {
+        "requests": 250,
+        "concurrency": 16,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 157.4,
+        "latency_ms": {
+          "p50": 96.71,
+          "p95": 151.34,
+          "p99": 176.82,
+          "max": 215.3,
+          "mean": 99.29
+        },
+        "rss_mb_after": 385.1
+      }
+    ],
+    "traces": [
+      {
+        "requests": 250,
+        "concurrency": 1,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 101.6,
+        "latency_ms": {
+          "p50": 8.4,
+          "p95": 11.42,
+          "p99": 12.33,
+          "max": 214.1,
+          "mean": 9.82
+        },
+        "rss_mb_after": 387.0
+      },
+      {
+        "requests": 250,
+        "concurrency": 4,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 88.5,
+        "latency_ms": {
+          "p50": 40.94,
+          "p95": 67.92,
+          "p99": 278.42,
+          "max": 296.92,
+          "mean": 45.0
+        },
+        "rss_mb_after": 387.0
+      },
+      {
+        "requests": 250,
+        "concurrency": 16,
+        "ok": 250,
+        "status_codes": {
+          "200": 250
+        },
+        "throughput_rps": 60.1,
+        "latency_ms": {
+          "p50": 215.85,
+          "p95": 567.4,
+          "p99": 693.65,
+          "max": 738.41,
+          "mean": 263.28
+        },
+        "rss_mb_after": 389.7
+      }
+    ]
+  },
+  "rss_mb_peak": 389.7
+}
