@@ -1,0 +1,91 @@
+name: ci
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: evalforge, POSTGRES_PASSWORD: evalforge, POSTGRES_DB: evalforge_test }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U evalforge" --health-interval 5s --health-retries 10
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: { enable-cache: true }
+      - run: uv sync --frozen --python 3.12
+      - name: Lint
+        run: uv run ruff check evalforge tests && uv run ruff format --check evalforge tests
+      - name: Unit + integration tests (SQLite)
+        run: uv run pytest --cov=evalforge --cov-report=term-missing
+      - name: Integration tests (PostgreSQL, real migrations)
+        env:
+          EVALFORGE_TEST_DATABASE_URL: postgresql+psycopg://evalforge:evalforge@localhost:5432/evalforge_test
+        run: uv run pytest tests/test_api.py
+      - name: Migration drift check
+        run: |
+          EVALFORGE_DATA_DIR=$(mktemp -d) uv run python - <<'PY'
+          from alembic import command
+          from alembic.autogenerate import compare_metadata
+          from alembic.migration import MigrationContext
+          from evalforge.db import Base, get_engine
+          from evalforge.migrations import alembic_config
+          from evalforge import models  # noqa
+          command.upgrade(alembic_config(), "head")
+          with get_engine().connect() as c:
+              diff = compare_metadata(MigrationContext.configure(c), Base.metadata)
+          assert not diff, f"ORM and migrations disagree: {diff}"
+          print("migrations in sync")
+          PY
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Python dependency audit
+        working-directory: backend
+        run: uv export --frozen --no-dev --no-hashes > req.txt && uvx pip-audit -r req.txt --progress-spinner off || echo "::warning::pip-audit reported findings"
+      - name: Static security scan (bandit)
+        working-directory: backend
+        run: uvx bandit -q -r evalforge -s B101,B404,B603,B607
+      - name: npm audit
+        working-directory: frontend
+        run: npm ci && npm audit --omit=dev --audit-level=high
+
+  containers:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t evalforge-api --build-arg GIT_COMMIT=${{ github.sha }} backend
+      - run: docker build -t evalforge-web frontend
+      - name: Container smoke test
+        run: |
+          docker run -d --name api -p 8000:8000 -e EVALFORGE_EXECUTOR=thread evalforge-api
+          for i in $(seq 1 30); do curl -sf localhost:8000/api/health/ready && break; sleep 2; done
+          curl -sf -X POST localhost:8000/api/demo/breast-cancer
