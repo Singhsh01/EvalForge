@@ -108,6 +108,33 @@ def json_schema(case: dict, output: dict, cfg: dict) -> Score:
         return {"score": 0.0, "passed": False, "detail": {"error": str(exc).splitlines()[0][:300]}}
 
 
+def json_fields(case: dict, output: dict, cfg: dict) -> Score:
+    """Field-level accuracy of extracted JSON against ``case["expected_json"]``.
+
+    Values compare after whitespace/case normalisation; numbers compare numerically, so
+    ``"3"`` and ``3`` match. Score = fraction of expected fields that match; passes only
+    when all fields match."""
+    expected = case.get("expected_json") or {}
+    raw = _text(output).strip()
+    m = re.search(r"\{.*\}", raw, re.S)
+    try:
+        got = json.loads(m.group(0) if m else raw)
+    except json.JSONDecodeError:
+        got = None
+    if not isinstance(got, dict):
+        return {"score": 0.0, "passed": False, "detail": {"error": "no JSON object in output"}}
+
+    def same(a: Any, b: Any) -> bool:
+        try:
+            return float(a) == float(b)
+        except (TypeError, ValueError):
+            return _norm(a) == _norm(b)
+
+    wrong = {k: got.get(k) for k, v in expected.items() if not same(got.get(k), v)}
+    score = 1 - len(wrong) / len(expected) if expected else 1.0
+    return {"score": round(score, 4), "passed": not wrong, "detail": {"wrong": wrong}}
+
+
 def token_f1(case: dict, output: dict, cfg: dict) -> Score:
     """Reference-answer comparison (SQuAD-style token F1)."""
     ref, hyp = Counter(_tokens(case.get("reference", ""))), Counter(_tokens(_text(output)))
@@ -350,6 +377,7 @@ EVALUATORS: dict[str, Callable[[dict, dict, dict], Score]] = {
     "contains": contains,
     "regex": regex,
     "json_schema": json_schema,
+    "json_fields": json_fields,
     "token_f1": token_f1,
     "tool_selection": tool_selection,
     "tool_arguments": tool_arguments,
