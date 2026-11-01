@@ -1,0 +1,189 @@
+{
+  "started_at": "2026-11-01T21:34:40.724516+00:00",
+  "datasets": {
+    "bench-breast-cancer": {
+      "task": "binary",
+      "rows": 569,
+      "features": 30,
+      "runs": [
+        {
+          "algorithm": "logistic_regression",
+          "status": "succeeded",
+          "error": null,
+          "run_id": "f3eef2cb66ae49debdfada29de5c2f26",
+          "holdout_f1": 0.95122,
+          "holdout_f1_ci95": [
+            0.902413,
+            0.989247
+          ],
+          "cv_f1_macro": [
+            0.971707,
+            0.00566
+          ],
+          "accuracy": 0.964912,
+          "latency_single_p95_ms": 3.719595,
+          "training_seconds": 0.010350822999498632
+        },
+        {
+          "algorithm": "random_forest",
+          "status": "succeeded",
+          "error": null,
+          "run_id": "b2923429f4a044e4abff32868d4e3aec",
+          "holdout_f1": 0.95,
+          "holdout_f1_ci95": [
+            0.895487,
+            0.989691
+          ],
+          "cv_f1_macro": [
+            0.950185,
+            0.01796
+          ],
+          "accuracy": 0.964912,
+          "latency_single_p95_ms": 17.553299,
+          "training_seconds": 0.3255375240005378
+        },
+        {
+          "algorithm": "gradient_boosting",
+          "status": "succeeded",
+          "error": null,
+          "run_id": "451ee3dc63364d48ae262eefffb1583f",
+          "holdout_f1": 0.962963,
+          "holdout_f1_ci95": [
+            0.912258,
+            1.0
+          ],
+          "cv_f1_macro": [
+            0.959684,
+            0.018083
+          ],
+          "accuracy": 0.973684,
+          "latency_single_p95_ms": 5.345101,
+          "training_seconds": 0.27919360599935317
+        }
+      ]
+    },
+    "bench-wine": {
+      "task": "3 classes",
+      "rows": 178,
+      "features": 13,
+      "runs": [
+        {
+          "algorithm": "logistic_regression",
+          "status": "succeeded",
+          "error": null,
+          "run_id": "449209efdac34720bfc203d7b6cd497c",
+          "holdout_f1": 0.970962,
+          "holdout_f1_ci95": [
+            0.899819,
+            1.0
+          ],
+          "cv_f1_macro": [
+            0.972146,
+            0.026262
+          ],
+          "accuracy": 0.972222,
+          "latency_single_p95_ms": 2.728881,
+          "training_seconds": 0.010287899000104517
+        },
+        {
+          "algorithm": "random_forest",
+          "status": "succeeded",
+          "error": null,
+          "run_id": "a781a5292ee9495a986013fb30dac1c8",
+          "holdout_f1": 1.0,
+          "holdout_f1_ci95": [
+            1.0,
+            1.0
+          ],
+          "cv_f1_macro": [
+            0.979124,
+            0.017062
+          ],
+          "accuracy": 1.0,
+          "latency_single_p95_ms": 15.07389,
+          "training_seconds": 0.31692750599995634
+        },
+        {
+          "algorithm": "gradient_boosting",
+          "status": "succeeded",
+          "error": null,
+          "run_id": "a833d102451a49b9b3469c63971f9efa",
+          "holdout_f1": 1.0,
+          "holdout_f1_ci95": [
+            1.0,
+            1.0
+          ],
+          "cv_f1_macro": [
+            0.973225,
+            0.013435
+          ],
+          "accuracy": 1.0,
+          "latency_single_p95_ms": 7.198734,
+          "training_seconds": 0.1244710290002331
+        }
+      ]
+    },
+    "bench-digits": {
+      "task": "10 classes",
+      "rows": 1797,
+      "features": 64,
+      "runs": [
+        {
+          "algorithm": "logistic_regression",
+          "status": "succeeded",
+          "error": null,
+          "run_id": "12deea48d21d4eaaa484be046068cadd",
+          "holdout_f1": 0.97194,
+          "holdout_f1_ci95": [
+            0.953056,
+            0.987406
+          ],
+          "cv_f1_macro": [
+            0.967148,
+            0.00427
+          ],
+          "accuracy": 0.972222,
+          "latency_single_p95_ms": 3.049812,
+          "training_seconds": 0.03068246399925556
+        },
+        {
+          "algorithm": "random_forest",
+          "status": "succeeded",
+          "error": null,
+          "run_id": "72d4a8162e87475ab841edc903993446",
+          "holdout_f1": 0.96883,
+          "holdout_f1_ci95": [
+            0.948414,
+            0.985125
+          ],
+          "cv_f1_macro": [
+            0.974873,
+            0.005602
+          ],
+          "accuracy": 0.969444,
+          "latency_single_p95_ms": 14.908666,
+          "training_seconds": 0.43981560400061426
+        },
+        {
+          "algorithm": "gradient_boosting",
+          "status": "succeeded",
+          "error": null,
+          "run_id": "2e64bc3118b94c2fa0251f62c05389be",
+          "holdout_f1": 0.960595,
+          "holdout_f1_ci95": [
+            0.938385,
+            0.979235
+          ],
+          "cv_f1_macro": [
+            0.971479,
+            0.006036
+          ],
+          "accuracy": 0.961111,
+          "latency_single_p95_ms": 21.184256,
+          "training_seconds": 2.0971913240000504
+        }
+      ]
+    }
+  },
+  "finished_at": "2026-11-01T21:35:56.104762+00:00"
+}

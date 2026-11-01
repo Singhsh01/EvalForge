@@ -1,7 +1,7 @@
 # EvalForge developer commands. Lite profile needs only uv and Node 20+.
 LLM_MODEL ?= openai:qwen2.5:3b
 
-.PHONY: perf llm-api llm-benchmark setup dev api web worker test lint demo demo-enterprise e2e compose-up compose-down observability mlflow-ui clean
+.PHONY: ml-benchmark perf llm-api llm-benchmark setup dev api web worker test lint demo demo-enterprise e2e compose-up compose-down observability mlflow-ui clean
 
 setup:            ## install backend + frontend dependencies
 	cd backend && uv sync
@@ -27,6 +27,9 @@ demo:             ## Demonstration: public dataset -> 3 runs -> comparison (API 
 
 demo-enterprise:  ## Case studies 1-3 end to end through the API (API + worker must be running)
 	cd backend && uv run python -m evalforge.demo.enterprise_demo --out ../docs/results
+
+ml-benchmark:     ## 3 public datasets x 3 algorithms through the API, with intervals -> docs/results/ml-benchmark.json
+	cd backend && uv run python -m evalforge.benchmarks.ml_benchmark --out ../docs/results/ml-benchmark.json
 
 perf:             ## Load test a running API (throughput, p50/p95/p99, memory) -> docs/results/performance.json
 	cd backend && uv run python -m evalforge.benchmarks.load_test --out ../docs/results/performance.json $(ARGS)
