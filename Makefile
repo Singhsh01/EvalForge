@@ -37,12 +37,12 @@ llm-api:          ## API with local Ollama as the OpenAI-compatible provider (ru
 llm-benchmark:    ## Real-LLM benchmark through the API (LLM_MODEL=openai:qwen2.5:3b; add ARGS=--quick for a smoke run)
 	cd backend && uv run python -m evalforge.benchmarks.llm_benchmark --model $(LLM_MODEL) --out ../docs/results $(ARGS)
 
-e2e:              ## Browser smoke test across all modules (API + web running; playwright browsers installed)
-	cd frontend && npm run e2e
+e2e:              ## Browser smoke test + real user operations (API + web running, demo data loaded)
+	cd frontend && npm run e2e && npm run e2e:ops
 
 test:
 	cd backend && uv run pytest
-	cd frontend && npm run typecheck
+	cd frontend && npm run typecheck && npm test
 
 lint:
 	cd backend && uv run ruff check evalforge tests && uv run ruff format --check evalforge tests
