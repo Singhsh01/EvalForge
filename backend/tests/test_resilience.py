@@ -158,7 +158,7 @@ def test_canary_promotion_rechecks_health(client, churn_csv):
     from evalforge.services.auth import Principal
     from evalforge.services.governance import GovernanceError
 
-    (mv1, mv2), eng = _two_versions(client, churn_csv)
+    (mv1, mv2), _ = _two_versions(client, churn_csv)
     actor = Principal("u", "engineer", "engineer")
     with session_scope() as db:
         serving.deploy(db, db.get(ModelVersion, mv1["id"]), "staging", 100, actor)
