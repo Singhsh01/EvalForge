@@ -20,10 +20,12 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -260,6 +262,19 @@ class Approval(Base):
 
 class Deployment(Base):
     __tablename__ = "deployments"
+    # At most one active stable and one active canary per model and environment, enforced by
+    # the database so concurrent deploys cannot both win (audit RES-03).
+    __table_args__ = (
+        Index(
+            "uq_deployments_one_active",
+            "model_name",
+            "environment",
+            "role",
+            unique=True,
+            sqlite_where=text("status = 'active'"),
+            postgresql_where=text("status = 'active'"),
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
     model_name: Mapped[str] = mapped_column(String(128), index=True)

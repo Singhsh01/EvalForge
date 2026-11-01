@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 
 from opentelemetry import context as otel_context
@@ -133,6 +133,29 @@ def submit(job_id: str) -> None:
             job_id=job_id,
             job_timeout=get_settings().job_timeout_seconds,
         )
+
+
+def reap_stale(grace_seconds: int = 300) -> int:
+    """Fail jobs still 'running' long after the job timeout: their worker is gone (killed,
+    out of memory, host lost). Works for every executor (audit RES-01); RQ itself would
+    only move the job to its failed registry and leave EvalForge's record running."""
+    from evalforge.services.training import mark_failed
+
+    cutoff = datetime.now(UTC) - timedelta(
+        seconds=get_settings().job_timeout_seconds + grace_seconds
+    )
+    with session_scope() as db:
+        stale = db.query(Job).filter(Job.status == JobStatus.running, Job.started_at < cutoff).all()
+        ids = [j.id for j in stale]
+        for j in stale:
+            j.status, j.stage = JobStatus.failed, "lost"
+            j.error = "worker lost: no completion within the job timeout"
+            j.finished_at = datetime.now(UTC)
+    for i in ids:
+        mark_failed(i, "Worker lost (job exceeded its timeout without completing)")
+    if ids:
+        metrics.JOBS.labels("any", "lost").inc(len(ids))
+    return len(ids)
 
 
 def recover_orphans() -> int:

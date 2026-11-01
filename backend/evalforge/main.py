@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
+from sqlalchemy.exc import IntegrityError
 
 from evalforge import __version__
 from evalforge.api import (
@@ -52,7 +53,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         threading.Thread(
             target=_scheduler_loop, args=(stop,), daemon=True, name="evalforge-scheduler"
         ).start()
-    n = jobs.recover_orphans()
+    n = jobs.recover_orphans() + jobs.reap_stale()
     if n:
         log.warning("marked %d interrupted job(s) as failed", n)
     yield
@@ -65,6 +66,8 @@ def _scheduler_loop(stop: threading.Event) -> None:
 
     while not stop.wait(get_settings().scheduler_interval_seconds):
         try:
+            if reaped := jobs.reap_stale():
+                log.warning("reaped %d stale job(s) whose worker was lost", reaped)
             started = run_due_schedules()
             if started:
                 log.info("scheduler started pipeline runs %s", started)
@@ -127,6 +130,14 @@ def create_app() -> FastAPI:
         if not path.startswith("/api/jobs"):
             log.info("%s %s %s %.1fms rid=%s", request.method, path, response.status_code, ms, rid)
         return response
+
+    @app.exception_handler(IntegrityError)
+    async def integrity_conflict(request: Request, exc: IntegrityError) -> JSONResponse:
+        # e.g. two concurrent deploys racing for the single active slot (audit RES-03)
+        log.warning("integrity conflict on %s: %s", request.url.path, str(exc.orig)[:200])
+        return JSONResponse(
+            {"detail": "Conflicting concurrent change; reload and retry"}, status_code=409
+        )
 
     @app.exception_handler(UnsafeModelArtifact)
     async def unsafe_artifact(request: Request, exc: UnsafeModelArtifact) -> JSONResponse:

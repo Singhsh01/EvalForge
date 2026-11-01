@@ -223,6 +223,13 @@ def promote_canary(
     stable, canary = stable_and_canary(db, name, env)
     if canary is None:
         raise GovernanceError("No active canary to promote")
+    # Re-check now: the health recorded at canary deploy time may be stale (audit RES-02).
+    health = health_check(canary.model_version)
+    if not health["healthy"]:
+        canary.health = health
+        raise GovernanceError(
+            f"Canary fails its health check now; promotion aborted: {health['checks']}"
+        )
     _end(canary, "superseded")
     if stable is not None:
         _end(stable, "superseded")
@@ -232,7 +239,7 @@ def promote_canary(
         environment=env,
         traffic_percent=100,
         role="stable",
-        health=canary.health,
+        health=health,
         approval_id=approval_id,
         deployed_by=actor.username,
         note="canary promoted to 100 %",
