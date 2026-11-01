@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import sys
 import time
 from datetime import UTC, datetime
@@ -33,7 +34,7 @@ import pandas as pd
 
 from evalforge.demo.data import breast_cancer_frame
 
-PASSWORD = "evalforge-dev"
+PASSWORD = os.environ.get("EVALFORGE_BOOTSTRAP_PASSWORD", "evalforge-dev")  # nosec B105 - documented dev default
 SHIFTED = [
     "mean_radius",
     "mean_perimeter",
@@ -371,7 +372,7 @@ def main() -> int:
                 {"type": "task_completion"},
                 {"type": "agent_efficiency", "max_steps": 8},
             ],
-            "gates": {"pass_rate": 1.0, "regression_tolerance": 0.05},
+            "gates": {"pass_rate": 1.0, "regression_tolerance": 0.05},  # nosec B105 - not a secret
         },
     )
 
