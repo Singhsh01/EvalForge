@@ -181,6 +181,7 @@ def run_training(job_id: str) -> dict[str, Any]:
     )
     log_span.set_attribute("mlflow.run_id", mlflow_run_id)
     log_span.end()
+    model_sha256 = tracking.artifact_digest(model_uri)
 
     with session_scope() as db:
         run = db.get(TrainingRun, run_id)
@@ -192,6 +193,7 @@ def run_training(job_id: str) -> dict[str, Any]:
             mlflow_run_id,
             model_uri,
         )
+        run.model_sha256 = model_sha256
         run.training_seconds, run.git_commit = train_s, str(git["commit"])
         run.status = JobStatus.succeeded
         run.finished_at = datetime.now(UTC)
@@ -227,11 +229,12 @@ def run_evaluation(job_id: str) -> dict[str, Any]:
         assert run is not None and version is not None and run.model_uri
         ev.status = JobStatus.running
         ev_id, model_uri, feats = ev.id, run.model_uri, run.feature_columns or []
+        model_sha256 = run.model_sha256
         target, storage_path = version.dataset.target_column, version.storage_path
         train_labels = (run.report or {}).get("labels", [])
 
     rep.update("loading", 0.2, "Loading model from MLflow and dataset")
-    model = tracking.load_model(model_uri)
+    model = tracking.load_model(model_uri, model_sha256)
     df = load_frame(storage_path)
     missing = [c for c in feats if c not in df.columns]
     if missing:

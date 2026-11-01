@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     rate_limit_login_per_min: int = 10
     rate_limit_write_per_min: int = 240
     rate_limit_serve_per_min: int = 1200
+    # Use the left-most X-Forwarded-For address as the client IP. Enable only when the API is
+    # reachable exclusively through a trusted proxy (e.g. the Next.js server), never when the
+    # API port itself is exposed, or clients could choose their own rate-limit key.
+    trust_forwarded_for: bool = False
 
     # --- Serving / governance -------------------------------------------------------
     gate_min_f1: float = 0.80

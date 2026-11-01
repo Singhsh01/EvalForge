@@ -34,6 +34,7 @@ from evalforge.config import get_settings
 from evalforge.models import AgentConfig, AuditEvent, CopilotSession, Dataset, ModelVersion
 from evalforge.observability import metrics, tracing
 from evalforge.services import evals
+from evalforge.services.auth import _RANK
 
 from .tools import ALL_TOOL_NAMES, TOOLS, ToolError
 
@@ -86,8 +87,18 @@ class Cancelled(Exception):
 class ToolRunner:
     """Executes tools for one session with permissions, budgets, tracing and evidence."""
 
-    def __init__(self, db: Session, cfg: dict[str, Any], session_id: str | None) -> None:
+    def __init__(
+        self,
+        db: Session,
+        cfg: dict[str, Any],
+        session_id: str | None,
+        actor: str = "copilot",
+        actor_role: str = "viewer",
+    ) -> None:
         self.db, self.cfg, self.session_id = db, cfg, session_id
+        # The human on whose behalf the agent acts. Action tools run with *their* identity
+        # and role, never an elevated one, and the model cannot override it (audit SEC-06).
+        self.actor, self.actor_role = actor, actor_role
         self.calls: list[dict[str, Any]] = []
         self.evidence: set[str] = set()
         self.t0 = time.monotonic()
@@ -130,8 +141,17 @@ class ToolRunner:
                     raise ToolError(f"unknown tool {name}")
                 if name not in self.cfg.get("tools_enabled", []):
                     raise ToolError(f"tool '{name}' is not enabled in this agent configuration")
-                if tool.permission == "action" and not self.cfg.get("allow_actions"):
-                    raise ToolError(f"action tool '{name}' requires allow_actions")
+                if tool.permission == "action":
+                    if not self.cfg.get("allow_actions"):
+                        raise ToolError(f"action tool '{name}' requires allow_actions")
+                    if _RANK.get(self.actor_role, -1) < _RANK["engineer"]:
+                        raise ToolError(
+                            f"action tool '{name}' needs the engineer role; "
+                            f"'{self.actor}' is {self.actor_role}"
+                        )
+                    args.pop("requested_by", None)
+                    rec["args"] = dict(args)
+                    args["requested_by"] = self.actor
                 t = time.perf_counter()
                 out = tool.fn(self.db, **args)
                 rec["duration_ms"] = round((time.perf_counter() - t) * 1000, 2)
@@ -749,6 +769,7 @@ def run_agent(
     persist: bool = True,
     incident_id: str | None = None,
     session_id: str | None = None,
+    actor_role: str = "viewer",
 ) -> dict[str, Any]:
     cfg_row = resolve_config(db, agent_config_id)
     cfg = {**DEFAULT_CONFIG, **cfg_row.config}
@@ -775,7 +796,7 @@ def run_agent(
             "copilot.planner": planner,
         },
     ) as sp:
-        runner = ToolRunner(db, cfg, sess.id if sess else None)
+        runner = ToolRunner(db, cfg, sess.id if sess else None, actor, actor_role)
         ds = _known_name(db, question)
         intent = classify(question, cfg.get("intent_order", list(INTENTS)))
         status, error = "completed", None
@@ -842,7 +863,9 @@ def _llm_available(ref: str) -> bool:
     )
 
 
-def investigate_incident(db: Session, incident_id: str, actor: str) -> dict[str, Any]:
+def investigate_incident(
+    db: Session, incident_id: str, actor: str, actor_role: str = "viewer"
+) -> dict[str, Any]:
     from evalforge.models import Incident, IncidentEvent
 
     inc = db.get(Incident, incident_id)
@@ -863,7 +886,7 @@ def investigate_incident(db: Session, incident_id: str, actor: str) -> dict[str,
         )
     )
     db.commit()
-    res = run_agent(db, question, None, actor, incident_id=inc.id)
+    res = run_agent(db, question, None, actor, incident_id=inc.id, actor_role=actor_role)
     inc = db.get(Incident, incident_id)
     assert inc is not None
     rep = res["report"]

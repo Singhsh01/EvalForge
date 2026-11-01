@@ -13,14 +13,15 @@ _cache: OrderedDict[str, Any] = OrderedDict()
 _lock = threading.Lock()
 
 
-def load_cached(uri: str) -> Any:
+def load_cached(uri: str, sha256: str | None = None) -> Any:
+    key = f"{uri}#{sha256 or ''}"
     with _lock:
-        if uri in _cache:
-            _cache.move_to_end(uri)
-            return _cache[uri]
-    model = tracking.load_model(uri)  # skops-safe loading via MLflow
+        if key in _cache:
+            _cache.move_to_end(key)
+            return _cache[key]
+    model = tracking.load_model(uri, sha256)  # skops-only, digest-verified, allowlisted types
     with _lock:
-        _cache[uri] = model
+        _cache[key] = model
         while len(_cache) > get_settings().model_cache_size:
             _cache.popitem(last=False)
     return model

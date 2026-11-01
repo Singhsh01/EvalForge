@@ -6,8 +6,9 @@
 * Roles are ordered: viewer < engineer < approver < admin. Production-changing
   actions additionally require *separation of duties*: whoever requested an
   approval cannot approve it.
-* Rate limiting: in-process sliding window per client. Adequate for a single API
-  process; a multi-replica deployment would move this to Redis.
+* Rate limiting: in-process sliding window. Logins are limited per client IP *and* per
+  username; authenticated requests per user (after the token is validated); invalid tokens
+  per client IP. Adequate for a single API process; multiple replicas need Redis.
 """
 
 from __future__ import annotations
@@ -55,6 +56,34 @@ def verify_password(password: str, encoded: str) -> bool:
         return hmac.compare_digest(dk, base64.b64decode(dk_b64))
     except Exception:
         return False
+
+
+_DUMMY_HASH: str | None = None
+
+
+def burn_password_check(password: str) -> None:
+    """Spend the same PBKDF2 work as a real check so unknown usernames are not
+    distinguishable by response time (audit SEC-02)."""
+    global _DUMMY_HASH
+    if _DUMMY_HASH is None:
+        _DUMMY_HASH = hash_password(secrets.token_urlsafe(16))
+    verify_password(password, _DUMMY_HASH)
+
+
+def client_ip(request: Request) -> str:
+    if get_settings().trust_forwarded_for:
+        fwd = request.headers.get("x-forwarded-for", "")
+        if fwd.strip():
+            return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def throttle(key: str, limit: int) -> None:
+    ok, retry = limiter.allow(key, limit)
+    if not ok:
+        raise HTTPException(
+            429, "Rate limit exceeded", headers={"Retry-After": str(int(retry) + 1)}
+        )
 
 
 def token_digest(token: str) -> str:
@@ -130,7 +159,13 @@ def current_principal(request: Request, db: Session = Depends(get_db)) -> Princi
     tok = db.scalar(select(ApiToken).where(ApiToken.token_hash == token_digest(header[7:].strip())))
     now = datetime.now(UTC)
     if tok is None or tok.revoked or _aware(tok.expires_at) < now or not tok.user.active:
+        # Invalid credentials are throttled per client IP, so rotating forged tokens does not
+        # open new rate-limit buckets (audit SEC-01).
+        throttle(f"authfail:{client_ip(request)}", get_settings().rate_limit_login_per_min * 6)
         raise HTTPException(401, "Invalid or expired token", headers={"WWW-Authenticate": "Bearer"})
+    bucket = rate_limit_bucket(request.method, request.url.path)
+    if bucket is not None:
+        throttle(f"{bucket[0]}:{tok.user.id}", bucket[1])
     if tok.last_used_at is None or now - _aware(tok.last_used_at) > timedelta(minutes=1):
         tok.last_used_at = now
         db.commit()

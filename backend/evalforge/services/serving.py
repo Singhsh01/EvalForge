@@ -49,7 +49,15 @@ def stable_and_canary(
 def health_check(mv: ModelVersion, n: int = 25) -> dict[str, Any]:
     """Release health: model loads from MLflow, predicts valid labels, meets latency budget."""
     t0 = time.perf_counter()
-    model = load_cached(mv.source_uri)
+    try:
+        model = load_cached(mv.source_uri, mv.artifact_sha256)
+    except Exception as exc:  # an artifact that cannot be loaded safely is an unhealthy release
+        return {
+            "healthy": False,
+            "checks": {"model_loads": False},
+            "error": f"{type(exc).__name__}: {exc}",
+            "checked_at": datetime.now(UTC).isoformat(),
+        }
     load_ms = (time.perf_counter() - t0) * 1000
     feats = mv.run.feature_columns or []
     X, y = holdout_frame(mv.run.dataset_version)
@@ -334,7 +342,7 @@ def predict(
     for c in feats:
         if c in numeric:
             X[c] = pd.to_numeric(X[c], errors="coerce")
-    model = load_cached(mv.source_uri)
+    model = load_cached(mv.source_uri, mv.artifact_sha256)
     with tracing.span(
         "model.predict",
         {

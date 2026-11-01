@@ -123,9 +123,11 @@ class AskIn(BaseModel):
     wait: bool = False
 
 
-def _run_background(session_id: str, question: str, cfg_id: str | None, actor: str) -> None:
+def _run_background(
+    session_id: str, question: str, cfg_id: str | None, actor: str, role: str
+) -> None:
     with session_scope() as db:
-        agent.run_agent(db, question, cfg_id, actor, session_id=session_id)
+        agent.run_agent(db, question, cfg_id, actor, session_id=session_id, actor_role=role)
 
 
 @router.post("/copilot/sessions", status_code=201)
@@ -133,7 +135,9 @@ def ask(body: AskIn, p: Viewer, db: Session = Depends(get_db)) -> dict[str, Any]
     """Read-only investigation; any recommended action still needs an approval."""
     try:
         if body.wait:
-            res = agent.run_agent(db, body.question, body.agent_config_id, p.username)
+            res = agent.run_agent(
+                db, body.question, body.agent_config_id, p.username, actor_role=p.role
+            )
             return sess_out(db.get(CopilotSession, res["session_id"]))  # type: ignore[arg-type]
         cfg = agent.resolve_config(db, body.agent_config_id)
         s = CopilotSession(
@@ -146,7 +150,7 @@ def ask(body: AskIn, p: Viewer, db: Session = Depends(get_db)) -> dict[str, Any]
         db.commit()
     except ToolError as exc:
         raise HTTPException(404, str(exc)) from exc
-    _pool.submit(_run_background, s.id, body.question, cfg.id, p.username)
+    _pool.submit(_run_background, s.id, body.question, cfg.id, p.username, p.role)
     return sess_out(s)
 
 
@@ -184,7 +188,7 @@ def cancel(sid: str, p: Viewer, db: Session = Depends(get_db)) -> dict[str, str]
 @router.post("/incidents/{incident_id}/investigate", status_code=201)
 def investigate(incident_id: str, p: Engineer, db: Session = Depends(get_db)) -> dict[str, Any]:
     try:
-        res = agent.investigate_incident(db, incident_id, p.username)
+        res = agent.investigate_incident(db, incident_id, p.username, p.role)
     except ToolError as exc:
         raise HTTPException(404, str(exc)) from exc
     return sess_out(db.get(CopilotSession, res["session_id"]))  # type: ignore[arg-type]

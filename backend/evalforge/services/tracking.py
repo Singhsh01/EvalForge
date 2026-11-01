@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import platform
 import subprocess
@@ -132,36 +133,84 @@ def log_training_run(
 
 
 def _log_model(model: Pipeline, signature: Any, example: pd.DataFrame) -> Any:
-    try:
-        return mlflow.sklearn.log_model(
-            model,
-            name="model",
-            signature=signature,
-            input_example=example,
-            serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_SKOPS,
-            skops_trusted_types=_trusted_types(model),
-        )
-    except Exception as exc:  # pragma: no cover - only when skops can't represent a type
-        log.warning("skops serialisation failed (%s); falling back to cloudpickle", exc)
-        return mlflow.sklearn.log_model(
-            model, name="model", signature=signature, input_example=example
-        )
+    # skops only, never a pickle fallback: a pickled artifact executes code on load
+    # (audit SEC-05). Models needing types outside SKOPS_ALLOWED_TYPES are refused.
+    return mlflow.sklearn.log_model(
+        model,
+        name="model",
+        signature=signature,
+        input_example=example,
+        serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_SKOPS,
+        skops_trusted_types=_trusted_types(model),
+    )
+
+
+# Non-default types our own pipelines need (logistic regression, random forest, histogram GBM).
+# Loading never trusts the list stored in the artifact's MLmodel file, only this allowlist.
+SKOPS_ALLOWED_TYPES = frozenset(
+    {
+        "numpy.dtype",
+        "sklearn.tree._tree.Tree",
+        "sklearn.ensemble._hist_gradient_boosting.predictor.TreePredictor",
+    }
+)
+
+
+class UnsafeModelArtifact(RuntimeError):
+    """The artifact is not a skops file, fails its integrity check, or needs untrusted types."""
 
 
 def _trusted_types(model: Pipeline) -> list[str]:
-    """Types skops flags as untrusted by default that we produced ourselves."""
-    try:
-        import skops.io as sio
+    import skops.io as sio
 
-        buf = sio.dumps(model)
-        return list(sio.get_untrusted_types(data=buf))
-    except Exception:
-        return []
+    needed = set(sio.get_untrusted_types(data=sio.dumps(model)))
+    if extra := needed - SKOPS_ALLOWED_TYPES:
+        raise UnsafeModelArtifact(f"model needs types outside the allowlist: {sorted(extra)}")
+    return sorted(needed)
 
 
-def load_model(model_uri: str) -> Pipeline:
+def _model_file(model_uri: str) -> Path:
+    import yaml
+
     configure()
-    return mlflow.sklearn.load_model(model_uri)
+    local = Path(mlflow.artifacts.download_artifacts(model_uri)).resolve()
+    meta = yaml.safe_load((local / "MLmodel").read_text())
+    sk = (meta or {}).get("flavors", {}).get("sklearn") or {}
+    if sk.get("serialization_format") != "skops":
+        raise UnsafeModelArtifact(
+            f"refusing to load {sk.get('serialization_format')!r} model artifact; "
+            "only skops is allowed"
+        )
+    f = (local / str(sk.get("pickled_model", ""))).resolve()
+    if f.parent != local or f.suffix != ".skops" or not f.is_file():
+        raise UnsafeModelArtifact(f"unexpected model file {sk.get('pickled_model')!r}")
+    return f
+
+
+def _sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def artifact_digest(model_uri: str) -> str:
+    """SHA-256 of the serialized model file, recorded at training/registration time."""
+    return _sha256(_model_file(model_uri))
+
+
+def load_model(model_uri: str, expected_sha256: str | None = None) -> Pipeline:
+    """Load a model safely: skops only, digest verified when known, allowlisted types only."""
+    import skops.io as sio
+
+    f = _model_file(model_uri)
+    if expected_sha256 is not None and _sha256(f) != expected_sha256:
+        raise UnsafeModelArtifact("model artifact digest does not match the registered digest")
+    needed = set(sio.get_untrusted_types(file=f))
+    if extra := needed - SKOPS_ALLOWED_TYPES:
+        raise UnsafeModelArtifact(f"model artifact requires untrusted types {sorted(extra)}")
+    return sio.load(f, trusted=sorted(needed))
 
 
 def ping() -> bool:

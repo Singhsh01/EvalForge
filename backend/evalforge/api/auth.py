@@ -7,15 +7,19 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from evalforge.config import get_settings
 from evalforge.db import get_db
 from evalforge.models import ApiToken, AuditEvent, User
 from evalforge.services.auth import (
     ROLES,
     Principal,
+    burn_password_check,
+    client_ip,
     current_principal,
     hash_password,
     issue_token,
     require,
+    throttle,
     token_digest,
     verify_password,
 )
@@ -35,8 +39,13 @@ class UserIn(BaseModel):
 
 
 @router.post("/login")
-def login(body: LoginIn, db: Session = Depends(get_db)) -> dict[str, Any]:
+def login(body: LoginIn, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    limit = get_settings().rate_limit_login_per_min
+    throttle(f"login-ip:{client_ip(request)}", limit)
+    throttle(f"login-user:{body.username.lower()}", limit)
     user = db.scalar(select(User).where(User.username == body.username))
+    if user is None:
+        burn_password_check(body.password)
     if user is None or not user.active or not verify_password(body.password, user.password_hash):
         db.add(
             AuditEvent(

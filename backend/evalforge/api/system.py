@@ -50,6 +50,18 @@ def ready(db: Session = Depends(get_db)) -> dict[str, Any]:
     return {"status": "ready", "checks": checks}
 
 
+def _redact_uri(uri: str) -> str:
+    """Drop user-info (credentials) from a URI before it leaves the API (audit SEC-03)."""
+    from urllib.parse import urlsplit, urlunsplit
+
+    parts = urlsplit(uri)
+    if parts.username or parts.password:
+        host = parts.hostname or ""
+        netloc = host + (f":{parts.port}" if parts.port else "")
+        return urlunsplit(parts._replace(netloc=netloc))
+    return uri
+
+
 @router.get("/meta")
 def meta() -> dict[str, Any]:
     s = get_settings()
@@ -57,7 +69,9 @@ def meta() -> dict[str, Any]:
         "version": __version__,
         "executor": s.executor,
         "database": s.resolved_database_url.split(":")[0],
-        "mlflow_tracking_uri": s.resolved_mlflow_uri if s.mlflow_tracking_uri else "embedded",
+        "mlflow_tracking_uri": _redact_uri(s.resolved_mlflow_uri)
+        if s.mlflow_tracking_uri
+        else "embedded",
         "algorithms": catalogue(),
         "limits": {
             "max_upload_mb": s.max_upload_mb,

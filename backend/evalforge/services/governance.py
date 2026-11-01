@@ -12,6 +12,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from evalforge.config import get_settings
@@ -90,6 +91,18 @@ def decide(
         raise PermissionError("Only approvers can decide approvals")
     if approval.requested_by == actor.username and not get_settings().allow_self_approval:
         raise PermissionError("Separation of duties: you cannot approve your own request")
+    # Atomically claim the approval: of two concurrent deciders only one sees rowcount 1, so
+    # the executor can never run twice (audit SEC-04). On PostgreSQL the second UPDATE waits
+    # for the first transaction and then re-checks the WHERE clause.
+    claimed = db.execute(
+        update(Approval)
+        .where(Approval.id == approval.id, Approval.status == "pending")
+        .values(status="deciding")
+        .execution_options(synchronize_session=False)
+    ).rowcount
+    if claimed != 1:
+        db.expire(approval, ["status"])
+        raise GovernanceError(f"Approval is already {approval.status}")
     approval.decided_by, approval.decision_reason = actor.username, reason
     approval.decided_at = datetime.now(UTC)
     if not approve:

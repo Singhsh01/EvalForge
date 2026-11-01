@@ -60,6 +60,8 @@ def register(db: Session, run: TrainingRun, actor: Principal) -> ModelVersion:
         version=int(mv.version),
         run_id=run.id,
         source_uri=run.model_uri,
+        # Digest pinned when training wrote the artifact; legacy runs are digested now.
+        artifact_sha256=run.model_sha256 or tracking.artifact_digest(run.model_uri),
         created_by=actor.username,
     )
     db.add(row)
@@ -99,7 +101,7 @@ def score_on(mv: ModelVersion, version: DatasetVersion) -> dict[str, float]:
         raise GovernanceError(
             f"Version lacks columns required by {mv.name} v{mv.version}: {missing}"
         )
-    model = load_cached(mv.source_uri)
+    model = load_cached(mv.source_uri, mv.artifact_sha256)
     labels = sorted(set((mv.run.report or {}).get("labels", [])) | set(y.unique()))
     metrics, _ = M.classification_metrics(model, X[feats], y, labels)
     return metrics

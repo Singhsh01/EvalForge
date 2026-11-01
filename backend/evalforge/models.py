@@ -142,6 +142,7 @@ class TrainingRun(Base):
     mlflow_experiment_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     mlflow_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     model_uri: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    model_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     training_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
     git_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -226,6 +227,7 @@ class ModelVersion(Base):
     version: Mapped[int] = mapped_column(Integer)
     run_id: Mapped[str] = mapped_column(ForeignKey("training_runs.id"), index=True)
     source_uri: Mapped[str] = mapped_column(String(1024))
+    artifact_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="registered")
     # registered | approved | rejected | archived
     is_champion: Mapped[bool] = mapped_column(default=False)

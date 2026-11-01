@@ -175,7 +175,7 @@ def build_report(
 ) -> DriftReport:
     th = {**DEFAULTS, **(thresholds or {})}
     feats = mv.run.feature_columns or []
-    model = load_cached(mv.source_uri)
+    model = load_cached(mv.source_uri, mv.artifact_sha256)
     with tracing.span(
         "drift.report", {"model.name": mv.name, "model.version": mv.version, "drift.source": source}
     ) as sp:

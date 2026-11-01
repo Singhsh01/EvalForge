@@ -64,8 +64,10 @@ def test_logout_revokes_token(client):
 
 def test_login_rate_limited(client, monkeypatch):
     from evalforge.config import get_settings
+    from evalforge.services.auth import limiter
 
     monkeypatch.setattr(get_settings(), "rate_limit_login_per_min", 3)
+    limiter.reset()  # the fixture's own admin login counts against the same per-IP budget
     codes = [
         client.post("/api/auth/login", json={"username": "x", "password": "y"}).status_code
         for _ in range(5)

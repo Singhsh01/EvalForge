@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import hashlib
 import logging
 import os
 import threading
@@ -35,7 +34,8 @@ from evalforge.config import get_settings
 from evalforge.migrations import upgrade_to_head
 from evalforge.observability import metrics, tracing
 from evalforge.services import jobs
-from evalforge.services.auth import ensure_bootstrap_users, limiter, rate_limit_bucket
+from evalforge.services.auth import ensure_bootstrap_users
+from evalforge.services.tracking import UnsafeModelArtifact
 
 os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -84,22 +84,9 @@ def create_app() -> FastAPI:
         CORSMiddleware, allow_origins=s.cors_origins, allow_methods=["*"], allow_headers=["*"]
     )
 
-    @app.middleware("http")
-    async def rate_limit(request: Request, call_next):  # type: ignore[no-untyped-def]
-        bucket = rate_limit_bucket(request.method, request.url.path)
-        if bucket is not None:
-            ident = request.headers.get("authorization") or (
-                request.client.host if request.client else "anon"
-            )
-            key = f"{bucket[0]}:{hashlib.sha256(ident.encode()).hexdigest()[:16]}"
-            ok, retry = limiter.allow(key, bucket[1])
-            if not ok:
-                return JSONResponse(
-                    {"detail": "Rate limit exceeded"},
-                    status_code=429,
-                    headers={"Retry-After": str(int(retry) + 1)},
-                )
-        return await call_next(request)
+    # Rate limiting lives in the auth layer (services/auth.py): logins per IP and username,
+    # authenticated calls per user, invalid tokens per IP. A header-keyed middleware here was
+    # bypassable by rotating forged Authorization headers (audit SEC-01).
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):  # type: ignore[no-untyped-def]
@@ -140,6 +127,11 @@ def create_app() -> FastAPI:
         if not path.startswith("/api/jobs"):
             log.info("%s %s %s %.1fms rid=%s", request.method, path, response.status_code, ms, rid)
         return response
+
+    @app.exception_handler(UnsafeModelArtifact)
+    async def unsafe_artifact(request: Request, exc: UnsafeModelArtifact) -> JSONResponse:
+        log.error("refused unsafe model artifact on %s: %s", request.url.path, exc)
+        return JSONResponse({"detail": f"Model artifact refused: {exc}"}, status_code=409)
 
     @app.get("/metrics", include_in_schema=False)
     def prometheus_metrics() -> Response:
