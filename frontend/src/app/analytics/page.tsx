@@ -5,7 +5,7 @@ import { Empty, ErrorNote, Panel, Th } from "@/components/ui";
 import { api, type J } from "@/lib/api";
 import { ALGO_LABEL, num } from "@/lib/format";
 import { useQuery } from "@tanstack/react-query";
-import { CartesianGrid, Legend, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
+import { AXIS, EChart, LEGEND, TOOLTIP } from "@/components/echart";
 
 const C: Record<string, string> = { logistic_regression: "#8fb4dc", random_forest: "#5fd3a2", gradient_boosting: "#f5b04c" };
 
@@ -22,19 +22,15 @@ export default function AnalyticsPage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel title="Quality vs. inference latency" subtitle="Holdout F1 against single-row p95 latency; bubble size = training seconds">
           {!training.length ? <Empty title="No finished runs" /> : (
-            <div className="h-72">
-              <ResponsiveContainer>
-                <ScatterChart margin={{ top: 8, right: 16, bottom: 18, left: 0 }}>
-                  <CartesianGrid stroke="rgb(255 255 255 / .06)" />
-                  <XAxis type="number" dataKey="latency_p95_ms" name="p95 ms" stroke="rgb(255 255 255 / .4)" fontSize={11} label={{ value: "p95 latency (ms)", position: "insideBottom", offset: -10, fill: "rgb(255 255 255 / .45)", fontSize: 11 }} />
-                  <YAxis type="number" dataKey="f1" name="F1" domain={["auto", 1]} stroke="rgb(255 255 255 / .4)" fontSize={11} width={44} tickFormatter={(v) => v.toFixed(2)} />
-                  <ZAxis type="number" dataKey="training_seconds" range={[40, 400]} name="train s" />
-                  <Tooltip formatter={(v) => num(Number(v), 4)} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  {algos.map((a) => <Scatter key={a} name={ALGO_LABEL[a] ?? a} data={training.filter((t) => t.algorithm === a)} fill={C[a] ?? "#ddd"} />)}
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
+            <EChart height={288} ariaLabel="Holdout F1 against p95 latency per training run" option={{
+              grid: { left: 48, right: 16, top: 32, bottom: 40 }, legend: LEGEND,
+              tooltip: { ...TOOLTIP, formatter: (p: { data: J }) => `${p.data.algorithm} · ${String(p.data.run_id).slice(0, 8)}<br/>F1 ${num(p.data.f1, 4)} · p95 ${num(p.data.latency_p95_ms, 2)} ms<br/>train ${num(p.data.training_seconds, 2)} s` },
+              xAxis: { type: "value", name: "p95 latency (ms)", nameLocation: "middle", nameGap: 26, scale: true, ...AXIS },
+              yAxis: { type: "value", name: "F1", scale: true, max: 1, ...AXIS },
+              series: algos.map((a) => ({ type: "scatter", name: ALGO_LABEL[a] ?? a, itemStyle: { color: C[a] ?? "#ddd", opacity: 0.85 },
+                symbolSize: (_: unknown, p: { data: J }) => 10 + Math.min(30, Math.sqrt(p.data.training_seconds ?? 0) * 20),
+                data: training.filter((t) => t.algorithm === a).map((t) => ({ ...t, value: [t.latency_p95_ms, t.f1] })) })),
+            }} />
           )}
         </Panel>
         <Panel title="LLM usage (7 days)" subtitle="From recorded provider calls">

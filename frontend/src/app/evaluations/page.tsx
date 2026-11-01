@@ -9,7 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AXIS, EChart, LEGEND, TOOLTIP } from "@/components/echart";
 
 const TEMPLATE = JSON.stringify({
   name: "my-suite", kind: "prompt", description: "",
@@ -135,6 +135,7 @@ function Evaluations() {
               Regression vs baseline {String(r.regression.baseline_run_id).slice(0, 8)}: {Object.entries(r.regression.regressed_metrics).map(([k, v]) => `${k} ${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}`).join(", ")} · newly failing: {r.regression.newly_failing_cases.map((c: J) => c.case_id).join(", ")}
             </p>
           )}
+          <ScoreHeatmap results={r.results ?? []} />
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead><tr><Th>Case</Th><Th>Result</Th>{Object.keys(r.results?.[0]?.scores ?? {}).map((k) => <Th key={k} right>{k}</Th>)}<Th right>ms</Th><Th>Details</Th></tr></thead>
@@ -168,19 +169,16 @@ function ComparePanel({ data }: { data: J }) {
   return (
     <Panel className="mt-6" title="Comparison" subtitle={`A: ${data.a.subject_key}   ·   B: ${data.b.subject_key}`}>
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="h-64">
-          <ResponsiveContainer>
-            <BarChart data={chart}>
-              <CartesianGrid stroke="rgb(255 255 255 / .06)" vertical={false} />
-              <XAxis dataKey="metric" stroke="rgb(255 255 255 / .4)" fontSize={11} />
-              <YAxis domain={[0, 1]} stroke="rgb(255 255 255 / .4)" fontSize={11} width={32} />
-              <Tooltip formatter={(v) => num(Number(v), 3)} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="a" name="A" fill={SERIES[1]} radius={[3, 3, 0, 0]} />
-              <Bar dataKey="b" name="B" fill={SERIES[0]} radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <EChart height={256} ariaLabel="Evaluation metrics, run A vs run B" option={{
+          grid: { left: 36, right: 8, top: 32, bottom: 28 }, legend: LEGEND,
+          tooltip: { ...TOOLTIP, trigger: "axis", valueFormatter: (v: unknown) => num(Number(v), 3) },
+          xAxis: { type: "category", data: chart.map((c) => c.metric), ...AXIS },
+          yAxis: { type: "value", min: 0, max: 1, ...AXIS },
+          series: [
+            { type: "bar", name: "A", data: chart.map((c) => c.a), itemStyle: { color: SERIES[1], borderRadius: [3, 3, 0, 0] } },
+            { type: "bar", name: "B", data: chart.map((c) => c.b), itemStyle: { color: SERIES[0], borderRadius: [3, 3, 0, 0] } },
+          ],
+        }} />
         <table className="text-sm">
           <thead><tr><Th>Case</Th><Th>A</Th><Th>B</Th></tr></thead>
           <tbody className="divide-y divide-white/5">
@@ -195,5 +193,27 @@ function ComparePanel({ data }: { data: J }) {
         </table>
       </div>
     </Panel>
+  );
+}
+
+function ScoreHeatmap({ results }: { results: J[] }) {
+  if (!results.length) return null;
+  const evals = Object.keys(results[0]?.scores ?? {});
+  if (!evals.length) return null;
+  const cases = results.map((c) => c.case_id);
+  const data = results.flatMap((c, y) => evals.map((e, x) => [x, y, c.error ? 0 : Number(c.scores?.[e]?.score ?? 0)]));
+  return (
+    <div className="mb-4">
+      <EChart height={Math.max(140, cases.length * 28 + 60)} ariaLabel="Score heatmap: cases by evaluator" option={{
+        grid: { left: 110, right: 70, top: 8, bottom: 32 },
+        tooltip: { ...TOOLTIP, formatter: (p: { value: number[] }) => `${cases[p.value[1]]} · ${evals[p.value[0]]}: ${num(p.value[2], 2)}` },
+        xAxis: { type: "category", data: evals, ...AXIS, splitArea: { show: false } },
+        yAxis: { type: "category", data: cases, ...AXIS, axisLabel: { ...AXIS.axisLabel, fontFamily: "IBM Plex Mono" } },
+        visualMap: { min: 0, max: 1, calculable: false, orient: "vertical", right: 0, top: "middle", itemHeight: 90,
+          textStyle: { color: "rgba(255,255,255,0.6)" }, inRange: { color: ["#f27a85", "#f0c35b", "#5fd3a2"] } },
+        series: [{ type: "heatmap", data, label: { show: true, color: "#0c1122", fontSize: 11, formatter: (p: { value: number[] }) => p.value[2].toFixed(2) },
+          itemStyle: { borderColor: "#0c1122", borderWidth: 2, borderRadius: 4 } }],
+      }} />
+    </div>
   );
 }

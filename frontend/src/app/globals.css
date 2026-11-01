@@ -82,8 +82,8 @@ body {
 }
 
 /* Recharts tooltip readability */
-.recharts-default-tooltip {
-  background: rgb(12 17 34 / 0.95) !important;
-  border: 1px solid rgb(255 255 255 / 0.1) !important;
-  border-radius: 10px;
-}
+
+/* React Flow on the dark glass theme */
+.flow-dark .react-flow { --xy-background-color: transparent; --xy-node-background-color: transparent; --xy-node-border: none; --xy-controls-button-background-color: rgba(255,255,255,0.06); --xy-controls-button-background-color-hover: rgba(255,255,255,0.12); --xy-controls-button-color: rgba(255,255,255,0.8); --xy-controls-button-border-color: rgba(255,255,255,0.08); }
+.flow-dark .react-flow__node { background: transparent; border: 0; padding: 0; box-shadow: none; }
+.flow-dark .react-flow__controls { box-shadow: none; border-radius: 10px; overflow: hidden; }

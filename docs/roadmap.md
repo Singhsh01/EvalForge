@@ -36,6 +36,8 @@ names the automated test or the recorded demo that exercises the feature.
 | | Incident investigation | ✅ | `test_copilot::test_agent_regression…`, case studies 2–3 |
 | | LangGraph | ⏳ not used — ADR 0008 | — |
 | **Frontend** | 15 modules + sign-in, all wired to the API | ✅ | `npm run build`, `frontend/e2e/smoke.mjs` |
+| | React Flow pipeline DAG + lineage graph; ECharts for all charts (incl. PSI-history and evaluation heatmaps); Recharts removed | ✅ | `npm run build`, e2e smoke, screenshots 05/16/17 |
+| | Optional Higgsfield asset workflow (cost check + approval gate, AVIF/WebP optimizer, graceful fallback) | ✅ tooling; **no assets generated** (needs your login + approval) | script guards exercised manually; fallback verified in browser |
 | | Component unit tests | ⏳ planned (covered by e2e smoke for now) | — |
 | **Ops** | Docker Compose (core + observability profile), CI (lint, tests on SQLite + PostgreSQL, migration drift, builds, security scans, e2e) | ✅ written | CI on GitHub; container images not built locally (Docker Hub blocked in dev sandbox) |
 

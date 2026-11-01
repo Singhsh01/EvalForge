@@ -2,3 +2,6 @@ node_modules
 .next
 next-env.d.ts
 *.tsbuildinfo
+
+# Higgsfield raw outputs (optimized copies live in public/brand/)
+brand/raw/

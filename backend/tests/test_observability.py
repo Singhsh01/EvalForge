@@ -55,7 +55,7 @@ def test_redaction_of_secrets_in_spans(client):
     ):
         pass
     _flush()
-    t = [x for x in client.get("/api/traces?q=custom.op").json() if x["name"] == "custom.op"][0]
+    t = next(x for x in client.get("/api/traces?q=custom.op").json() if x["name"] == "custom.op")
     a = t["attributes"]
     assert a["api_key"] == "[REDACTED]" and a["count"] == 3
     assert "efk_" not in a["note"] and "bob@" not in a["note"]

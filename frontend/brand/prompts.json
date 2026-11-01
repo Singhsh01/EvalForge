@@ -1,0 +1,23 @@
+{
+  "$comment": "Optional visual assets for EvalForge, generated with the Higgsfield CLI. Nothing here is used at runtime unless optimized files exist in public/brand/. Verify model ids and params with `higgsfield model list --image` and `higgsfield model get <id>` before running.",
+  "defaults": { "model": "nano_banana_2", "params": { "aspect_ratio": "16:9" } },
+  "assets": [
+    {
+      "id": "hero-background",
+      "use": "Full-page ambient background behind the app shell (sits under a dark overlay).",
+      "prompt": "Abstract deep navy and midnight-indigo cinematic background, soft volumetric light, faint luminous network of thin amber and teal lines suggesting data flowing between nodes, large areas of calm dark negative space for white text, subtle film grain, no text, no logos, no people, minimal, premium, 8k"
+    },
+    {
+      "id": "observability-illustration",
+      "use": "Empty-state illustration on Traces and Monitoring pages.",
+      "prompt": "Minimal isometric illustration of glowing glass panels showing waveform and histogram shapes floating in a dark navy void, soft amber and mint rim light, glassmorphism, no text, no logos, centered with generous margins",
+      "params": { "aspect_ratio": "4:3" }
+    },
+    {
+      "id": "copilot-illustration",
+      "use": "Empty-state illustration on the Copilot page.",
+      "prompt": "Abstract AI assistant concept: a softly glowing translucent glass orb with fine circuit-like filaments inside, surrounded by faint orbiting evidence cards, dark navy background, amber and lavender accents, no text, no faces, no logos",
+      "params": { "aspect_ratio": "4:3" }
+    }
+  ]
+}

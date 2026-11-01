@@ -1,6 +1,6 @@
 "use client";
 
-import { Dag } from "@/components/dag";
+import { Dag, LineageGraph } from "@/components/dag";
 import { PageHeader } from "@/components/shell";
 import { Button, Empty, ErrorNote, Field, inputCls, JsonBlock, Mono, Panel, Status, Th } from "@/components/ui";
 import { api, type J } from "@/lib/api";
@@ -57,11 +57,14 @@ function Pipelines() {
           {run && (
             <div className="mt-4 border-t border-white/5 pt-4">
               <div className="mb-2 text-sm font-medium text-white">Lineage</div>
+              <LineageGraph lineage={run.lineage ?? {}} />
+              <details className="mt-2 text-xs text-white/50"><summary className="cursor-pointer">Raw lineage fields</summary>
               <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-3">
                 {Object.entries(run.lineage ?? {}).map(([k, v]) => (
                   <div key={k}><dt className="text-white/40">{k}</dt><dd className="truncate font-mono text-white/75" title={String(v)}>{String(v)}</dd></div>
                 ))}
               </dl>
+              </details>
             </div>
           )}
         </Panel>

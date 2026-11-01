@@ -7,7 +7,8 @@ import { ago, cn, num } from "@/lib/format";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AXIS, EChart, LEGEND, TOOLTIP } from "@/components/echart";
+import { useQueries } from "@tanstack/react-query";
 
 const VERDICT: Record<string, { label: string; tone: "pass" | "warn" | "fail" }> = {
   no_drift: { label: "No drift", tone: "pass" },
@@ -93,20 +94,20 @@ export default function MonitoringPage() {
             {f && (
               <>
                 <h3 className="mb-1 text-sm font-medium text-white">{f.feature} <span className="text-xs font-normal text-white/50">{f.test} statistic {num(f.statistic, 3)} · p {f.p_value.toExponential(2)} · PSI {num(f.psi, 3)} {f.drifted ? "· drifted" : ""}</span></h3>
-                <div className="h-56">
-                  <ResponsiveContainer>
-                    <BarChart data={f.histogram ? f.histogram.reference.map((v: number, i: number) => ({ bin: num(f.histogram.edges[i], 2), reference: v, current: f.histogram.current[i] }))
-                      : f.distribution.categories.map((c: string, i: number) => ({ bin: c, reference: f.distribution.reference[i], current: f.distribution.current[i] }))} barGap={0}>
-                      <CartesianGrid stroke="rgb(255 255 255 / .06)" vertical={false} />
-                      <XAxis dataKey="bin" stroke="rgb(255 255 255 / .4)" fontSize={10} interval="preserveStartEnd" />
-                      <YAxis stroke="rgb(255 255 255 / .4)" fontSize={10} width={36} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
-                      <Tooltip formatter={(v) => `${(Number(v) * 100).toFixed(1)}%`} />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="reference" name="Training reference" fill="#8fb4dc" />
-                      <Bar dataKey="current" name="Current" fill="#f5b04c" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <EChart height={224} ariaLabel={`Distribution of ${f.feature}: training reference vs current`} option={(() => {
+                  const rows = f.histogram ? f.histogram.reference.map((v: number, i: number) => ({ bin: num(f.histogram.edges[i], 2), reference: v, current: f.histogram.current[i] }))
+                    : f.distribution.categories.map((c: string, i: number) => ({ bin: c, reference: f.distribution.reference[i], current: f.distribution.current[i] }));
+                  return {
+                    grid: { left: 40, right: 8, top: 32, bottom: 28 }, legend: LEGEND,
+                    tooltip: { ...TOOLTIP, trigger: "axis", valueFormatter: (v: unknown) => `${(Number(v) * 100).toFixed(1)}%` },
+                    xAxis: { type: "category", data: rows.map((r: J) => r.bin), ...AXIS },
+                    yAxis: { type: "value", ...AXIS, axisLabel: { ...AXIS.axisLabel, formatter: (v: number) => `${Math.round(v * 100)}%` } },
+                    series: [
+                      { type: "bar", name: "Training reference", data: rows.map((r: J) => r.reference), itemStyle: { color: "#8fb4dc" }, barGap: "0%" },
+                      { type: "bar", name: "Current", data: rows.map((r: J) => r.current), itemStyle: { color: "#f5b04c" } },
+                    ],
+                  };
+                })()} />
               </>
             )}
             <table className="mt-4 w-full text-sm">
@@ -121,7 +122,37 @@ export default function MonitoringPage() {
           </Panel>
         )}
       </div>
+      <PsiHistory reports={(reports.data ?? []).slice(0, 8)} onPick={setSel} />
     </>
+  );
+}
+
+/** Feature × report PSI heatmap: how drift evolved across the most recent reports. */
+function PsiHistory({ reports, onPick }: { reports: J[]; onPick: (id: string) => void }) {
+  const details = useQueries({ queries: reports.map((r) => ({ queryKey: ["drift", r.id], queryFn: () => api.driftReport(r.id) })) });
+  const ready = details.map((d) => d.data).filter(Boolean).reverse() as J[];
+  if (ready.length < 2) return null;
+  // Rank features by their worst PSI across the window so the movers are always on screen.
+  const peak: Record<string, number> = {};
+  ready.forEach((r) => r.features.forEach((f: J) => { peak[f.feature] = Math.max(peak[f.feature] ?? 0, f.psi ?? 0); }));
+  const feats = Object.keys(peak).sort((a, b) => peak[b] - peak[a]).slice(0, 12);
+  const data = ready.flatMap((r, x) => feats.map((f, y) => [x, y, r.features.find((z: J) => z.feature === f)?.psi ?? 0]));
+  const labels = ready.map((r) => `${new Date(r.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · ${r.model_name.slice(0, 14)}`);
+  return (
+    <Panel className="mt-6" title="Drift history" subtitle="PSI per feature across the latest reports (oldest left). Click a column to open that report.">
+      <EChart height={feats.length * 26 + 70} ariaLabel="PSI heatmap of features across drift reports"
+        onClick={(p) => { const x = (p.value as number[])?.[0]; if (x !== undefined) onPick(ready[x].id); }}
+        option={{
+          grid: { left: 150, right: 80, top: 8, bottom: 40 },
+          tooltip: { ...TOOLTIP, formatter: (p: { value: number[] }) => `${feats[p.value[1]]}<br/>${labels[p.value[0]]}: PSI ${num(p.value[2], 3)}` },
+          xAxis: { type: "category", data: labels, ...AXIS },
+          yAxis: { type: "category", data: feats, inverse: true, ...AXIS },
+          visualMap: { min: 0, max: 1, right: 0, top: "middle", itemHeight: 100, calculable: false, textStyle: { color: "rgba(255,255,255,0.6)" },
+            inRange: { color: ["#141b33", "#8fb4dc", "#f0c35b", "#f27a85"] } },
+          series: [{ type: "heatmap", data, itemStyle: { borderColor: "#0c1122", borderWidth: 2, borderRadius: 3 },
+            label: { show: true, fontSize: 10, color: "#fff", formatter: (p: { value: number[] }) => (p.value[2] >= 0.1 ? p.value[2].toFixed(2) : "") } }],
+        }} />
+    </Panel>
   );
 }
 

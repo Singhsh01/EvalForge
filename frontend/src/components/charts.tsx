@@ -1,14 +1,9 @@
 "use client";
 
+import { AXIS, EChart, LEGEND, SERIES, TOOLTIP } from "@/components/echart";
 import { num } from "@/lib/format";
-import {
-  Bar, BarChart, CartesianGrid, Cell, ErrorBar, Legend, Line, LineChart, ReferenceLine,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from "recharts";
 
-const AXIS = { stroke: "rgb(255 255 255 / 0.35)", fontSize: 11 };
-const GRID = "rgb(255 255 255 / 0.06)";
-export const SERIES = ["#f5b04c", "#8fb4dc", "#5fd3a2", "#c9a7f5", "#f27a85", "#7fd6e0", "#e6e6e6", "#b9c76a"];
+export { SERIES };
 
 export function ConfusionMatrix({ matrix, labels }: { matrix: number[][]; labels: string[] }) {
   const max = Math.max(...matrix.flat(), 1);
@@ -28,13 +23,9 @@ export function ConfusionMatrix({ matrix, labels }: { matrix: number[][]; labels
               <th className="pr-2 text-right text-xs font-medium text-white/60">{labels[i]}</th>
               {row.map((v, j) => {
                 const a = v / max;
-                const diag = i === j;
                 return (
-                  <td key={j}
-                    className="h-16 min-w-20 rounded-lg text-center tabular-nums"
-                    style={{
-                      background: diag ? `rgb(95 211 162 / ${0.08 + a * 0.5})` : `rgb(242 122 133 / ${v ? 0.08 + a * 0.6 : 0.03})`,
-                    }}
+                  <td key={j} className="h-16 min-w-20 rounded-lg text-center tabular-nums"
+                    style={{ background: i === j ? `rgb(95 211 162 / ${0.08 + a * 0.5})` : `rgb(242 122 133 / ${v ? 0.08 + a * 0.6 : 0.03})` }}
                     title={`${labels[i]} predicted as ${labels[j]}: ${v}`}>
                     <div className="text-base font-semibold text-white">{v}</div>
                     <div className="text-[11px] text-white/50">{((v / total) * 100).toFixed(1)}%</div>
@@ -50,73 +41,59 @@ export function ConfusionMatrix({ matrix, labels }: { matrix: number[][]; labels
 }
 
 export function RocCurve({ fpr, tpr, auc }: { fpr: number[]; tpr: number[]; auc?: number }) {
-  const data = fpr.map((x, i) => ({ fpr: x, tpr: tpr[i] }));
   return (
-    <div className="h-64">
-      <ResponsiveContainer>
-        <LineChart data={data} margin={{ top: 8, right: 12, bottom: 18, left: 0 }}>
-          <CartesianGrid stroke={GRID} />
-          <XAxis type="number" dataKey="fpr" domain={[0, 1]} {...AXIS} label={{ value: "False positive rate", position: "insideBottom", offset: -10, fill: "rgb(255 255 255 / .45)", fontSize: 11 }} />
-          <YAxis type="number" domain={[0, 1]} {...AXIS} width={36} />
-          <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 1, y: 1 }]} stroke="rgb(255 255 255 / 0.2)" strokeDasharray="4 4" />
-          <Tooltip formatter={(v) => num(Number(v), 3)} labelFormatter={(v) => `FPR ${num(Number(v), 3)}`} />
-          <Line type="stepAfter" dataKey="tpr" name={`TPR${auc ? ` (AUC ${num(auc, 3)})` : ""}`} stroke="#f5b04c" strokeWidth={2} dot={false} />
-          <Legend verticalAlign="top" height={24} wrapperStyle={{ fontSize: 12 }} />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <EChart height={256} ariaLabel={`ROC curve, AUC ${num(auc, 3)}`} option={{
+      grid: { left: 40, right: 12, top: 28, bottom: 36 },
+      legend: LEGEND, tooltip: { ...TOOLTIP, trigger: "axis", valueFormatter: (v: unknown) => num(Number(v), 3) },
+      xAxis: { type: "value", min: 0, max: 1, name: "False positive rate", nameLocation: "middle", nameGap: 24, ...AXIS },
+      yAxis: { type: "value", min: 0, max: 1, ...AXIS },
+      series: [
+        { name: `TPR${auc ? ` (AUC ${num(auc, 3)})` : ""}`, type: "line", step: "end", showSymbol: false,
+          data: fpr.map((x, i) => [x, tpr[i]]), lineStyle: { width: 2 }, areaStyle: { opacity: 0.08 } },
+        { name: "chance", type: "line", showSymbol: false, data: [[0, 0], [1, 1]],
+          lineStyle: { type: "dashed", color: "rgba(255,255,255,0.25)", width: 1 }, tooltip: { show: false } },
+      ],
+    }} />
   );
 }
 
 export function ImportanceBars({ rows }: { rows: { feature: string; importance: number; std: number }[] }) {
-  const data = rows.slice(0, 12).map((r) => ({ ...r, err: [r.std, r.std] }));
+  const data = rows.slice(0, 12).reverse();
   return (
-    <div style={{ height: Math.max(160, data.length * 26 + 30) }}>
-      <ResponsiveContainer>
-        <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
-          <CartesianGrid stroke={GRID} horizontal={false} />
-          <XAxis type="number" {...AXIS} />
-          <YAxis type="category" dataKey="feature" width={170} {...AXIS} tick={{ fill: "rgb(255 255 255 / .7)", fontSize: 11 }} />
-          <Tooltip formatter={(v) => num(Number(v), 4)} cursor={{ fill: "rgb(255 255 255 / 0.04)" }} />
-          <Bar dataKey="importance" name="F1 drop when shuffled" radius={[0, 4, 4, 0]}>
-            {data.map((d) => <Cell key={d.feature} fill={d.importance > 0 ? "#8fb4dc" : "rgb(255 255 255 / 0.2)"} />)}
-            <ErrorBar dataKey="err" width={4} stroke="rgb(255 255 255 / 0.5)" direction="x" />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <EChart height={Math.max(180, data.length * 26 + 40)} ariaLabel="Permutation feature importance" option={{
+      grid: { left: 170, right: 24, top: 8, bottom: 24 },
+      tooltip: { ...TOOLTIP, trigger: "axis", formatter: (p: { dataIndex: number }[]) => {
+        const r = data[p[0].dataIndex]; return `${r.feature}<br/>ΔF1 ${num(r.importance, 4)} ± ${num(r.std, 4)}`; } },
+      xAxis: { type: "value", ...AXIS },
+      yAxis: { type: "category", data: data.map((r) => r.feature), ...AXIS, axisLabel: { ...AXIS.axisLabel, color: "rgba(255,255,255,0.75)" } },
+      series: [{ type: "bar", data: data.map((r) => ({ value: r.importance, itemStyle: { color: r.importance > 0 ? "#8fb4dc" : "rgba(255,255,255,0.2)", borderRadius: [0, 4, 4, 0] } })) },
+        { type: "scatter", symbol: "rect", symbolSize: [1, 10], data: data.map((r, i) => [r.importance + r.std, i]), itemStyle: { color: "rgba(255,255,255,0.45)" }, tooltip: { show: false } }],
+    }} />
   );
 }
 
 export function Histogram({ counts, edges }: { counts: number[]; edges: (number | null)[] }) {
-  const data = counts.map((c, i) => ({ c, x: edges[i] ?? 0, x2: edges[i + 1] ?? 0 }));
   return (
-    <div className="h-20">
-      <ResponsiveContainer>
-        <BarChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }} barCategoryGap={1}>
-          <Tooltip cursor={{ fill: "rgb(255 255 255 / 0.05)" }}
-            formatter={(v) => [v, "rows"]}
-            labelFormatter={(_, p) => p?.[0] ? `${num(p[0].payload.x, 3)} – ${num(p[0].payload.x2, 3)}` : ""} />
-          <Bar dataKey="c" fill="#8fb4dc" radius={[2, 2, 0, 0]} isAnimationActive={false} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <EChart height={80} ariaLabel="Value distribution" option={{
+      grid: { left: 0, right: 0, top: 4, bottom: 0 },
+      tooltip: { ...TOOLTIP, trigger: "axis", formatter: (p: { dataIndex: number; value: number }[]) =>
+        `${num(edges[p[0].dataIndex], 3)} – ${num(edges[p[0].dataIndex + 1], 3)}<br/>${p[0].value} rows` },
+      xAxis: { type: "category", show: false, data: counts.map((_, i) => i) },
+      yAxis: { type: "value", show: false },
+      series: [{ type: "bar", data: counts, barCategoryGap: "8%", itemStyle: { color: "#8fb4dc", borderRadius: [2, 2, 0, 0] } }],
+    }} />
   );
 }
 
 export function GroupedMetricBars({ data, series }: { data: Record<string, number | string>[]; series: { key: string; name: string }[] }) {
+  const vals = data.flatMap((d) => series.map((s) => Number(d[s.key]) || 0));
   return (
-    <div className="h-72">
-      <ResponsiveContainer>
-        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke={GRID} vertical={false} />
-          <XAxis dataKey="metric" {...AXIS} tick={{ fill: "rgb(255 255 255 / .7)", fontSize: 11 }} />
-          <YAxis domain={["dataMin - 0.02", 1]} {...AXIS} width={44} tickFormatter={(v) => Number(v).toFixed(2)} allowDataOverflow />
-          <Tooltip formatter={(v) => num(Number(v), 4)} cursor={{ fill: "rgb(255 255 255 / 0.04)" }} />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
-          {series.map((s, i) => <Bar key={s.key} dataKey={s.key} name={s.name} fill={SERIES[i % SERIES.length]} radius={[3, 3, 0, 0]} />)}
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <EChart height={288} ariaLabel="Holdout metrics by run" option={{
+      grid: { left: 44, right: 8, top: 36, bottom: 28 },
+      legend: LEGEND, tooltip: { ...TOOLTIP, trigger: "axis", valueFormatter: (v: unknown) => num(Number(v), 4) },
+      xAxis: { type: "category", data: data.map((d) => d.metric), ...AXIS },
+      yAxis: { type: "value", min: Math.max(0, Math.floor((Math.min(...vals) - 0.02) * 100) / 100), max: 1, ...AXIS },
+      series: series.map((s) => ({ type: "bar", name: s.name, data: data.map((d) => d[s.key]), itemStyle: { borderRadius: [3, 3, 0, 0] } })),
+    }} />
   );
 }

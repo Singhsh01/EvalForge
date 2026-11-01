@@ -12,6 +12,9 @@
 ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?logo=scikitlearn&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![React Flow](https://img.shields.io/badge/React%20Flow-12-FF0072)
+![ECharts](https://img.shields.io/badge/Apache%20ECharts-6-AA344D?logo=apacheecharts&logoColor=white)
+![Motion](https://img.shields.io/badge/Motion-14-FFF312)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker%20Compose-2496ED?logo=docker&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
@@ -33,14 +36,14 @@
 |---|---|---|
 | **Dataset studio** | Upload CSV/JSON; immutable SHA-256 versions; profiles; 13 quality & leakage checks; fixed stratified holdout | pandas, Parquet |
 | **Experiment lab** | Train logistic regression / random forest / histogram GBM with validated hyperparameters; CV, permutation importance, latency; compare runs | scikit-learn, MLflow |
-| **Pipeline studio** | Continuous training as a live DAG: validate → train → evaluate → register → gate → staging → promotion request; retries, resume, lineage, schedules | persisted DAG runner |
+| **Pipeline studio** | Continuous training as an interactive DAG: validate → train → evaluate → register → gate → staging → promotion request; retries, resume, schedules, and a provenance graph (data → run → MLflow → model → deployment → approval) | persisted DAG runner, React Flow |
 | **Model registry** | MLflow registration, `champion` alias, quality gate that re-scores the champion on the candidate's holdout, model cards | MLflow registry |
 | **Deployment center** | Staging/production, release health checks, canary traffic splits, promote/rollback, inference playground | versioned inference API |
 | **Approvals** | Two-person control for promotion, production deploys, canary promotion, rollback, retraining, prompt release | role-based governance |
-| **Evaluation workbench** | Versioned suites for prompts, RAG and agents; deterministic, schema, tool-use, retrieval, groundedness, citation and LLM-judge evaluators; regression detection | evaluation engine |
+| **Evaluation workbench** | Versioned suites for prompts, RAG and agents; deterministic, schema, tool-use, retrieval, groundedness, citation and LLM-judge evaluators; regression detection; case × evaluator score heatmap | evaluation engine, ECharts |
 | **Prompt registry** | Templates with typed variables and JSON output schemas, diffs, evaluation-gated release | |
 | **Trace explorer** | Distributed trace waterfall across API, worker, training, MLflow, inference, LLM and agent spans; redaction | OpenTelemetry |
-| **Drift monitoring** | KS/χ²/PSI feature drift, prediction drift and label-confirmed degradation kept separate; PSI heatmap and distribution overlays | scipy |
+| **Drift monitoring** | KS/χ²/PSI feature drift, prediction drift and label-confirmed degradation kept separate; distribution overlays and a feature × report PSI history heatmap | scipy, ECharts |
 | **Incident investigation** | Auto-opened from drift and eval regressions; timeline, Copilot findings, justified + approval-gated retraining | |
 | **AI MLOps Copilot** | Ask *"Why did my latest model perform worse?"* — a tool-using agent gathers evidence from real data, and only claims citing that evidence survive | rules or LLM planner |
 | **Cost & performance** | Quality vs latency, evaluation tokens/cost, serving latency | |
@@ -86,6 +89,8 @@ on the same holdout (0.949 vs 0.922). After an approved release, F1 on recalibra
 <td><img src="docs/screenshots/08-approvals.png" width="100%"><br><b>Approvals</b> — two-person control and decision history</td></tr>
 <tr><td><img src="docs/screenshots/13-system-health.png" width="100%"><br><b>System health & audit</b></td>
 <td><img src="docs/screenshots/14-cost-performance.png" width="100%"><br><b>Cost & performance</b></td></tr>
+<tr><td><img src="docs/screenshots/16-drift-history.png" width="100%"><br><b>Drift history</b> — PSI per feature across reports; click a column to open the report</td>
+<td><img src="docs/screenshots/17-evaluation-heatmap.png" width="100%"><br><b>Evaluation heatmap</b> — case × evaluator scores for one run</td></tr>
 </table>
 
 ## Architecture
@@ -135,6 +140,15 @@ Prometheus (:9090) and Grafana (:3001).
 
 All settings: [.env.example](.env.example).
 
+**Frontend stack:** Next.js 16, React 19, Tailwind v4 glassmorphism, React Flow for pipeline and
+lineage graphs, Apache ECharts (tree-shaken, canvas) for every chart, Motion for UI animation
+(disabled under `prefers-reduced-motion`).
+
+**Optional visual assets (Higgsfield):** premium backgrounds and illustrations can be generated
+with the Higgsfield CLI through a cost-checked, approval-gated script (`npm run brand:cost`).
+Higgsfield is **not** a dependency; with no generated assets the app uses its CSS background.
+See [docs/guides/visual-assets.md](docs/guides/visual-assets.md).
+
 ## Feature status
 
 Implemented features and their tests, plus what is still planned:
@@ -164,7 +178,7 @@ Details and commands: [docs/results/test-report.md](docs/results/test-report.md)
 |---|---|
 | [Architecture](docs/architecture.md) · [ADRs](docs/adr) · [Roadmap / feature matrix](docs/roadmap.md) | design |
 | [Deployment & rollback](docs/guides/deployment-and-rollback.md) · [MLOps pipelines](docs/guides/mlops-pipelines.md) · [Database migrations](docs/guides/database-migrations.md) | operate |
-| [Evaluation methodology](docs/guides/evaluation-methodology.md) · [Copilot](docs/guides/copilot.md) · [Observability](docs/guides/observability.md) · [Security](docs/guides/security.md) | understand |
+| [Evaluation methodology](docs/guides/evaluation-methodology.md) · [Copilot](docs/guides/copilot.md) · [Observability](docs/guides/observability.md) · [Security](docs/guides/security.md) · [Visual assets](docs/guides/visual-assets.md) | understand |
 | [API reference](docs/guides/api-reference.md) (83 operations) · [OpenAPI](docs/openapi.json) | integrate |
 | [Case studies](docs/case-studies) · [Measured results](docs/results) | evidence |
 
