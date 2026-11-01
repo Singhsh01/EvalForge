@@ -7,6 +7,8 @@ guard. Load, benchmark and failure-injection runs were executed in a 2-vCPU / 7 
 (lite profile: SQLite, embedded MLflow, thread executor) unless stated otherwise.
 
 Every number below comes from a command recorded in [§7](#7-how-to-reproduce). Nothing is estimated.
+The auditor also wrote much of the audited code, so this is a self-audit with adversarial tests, not an
+independent review; an external review remains advisable before production use.
 Where a result is missing (real-LLM evaluation), the report says so.
 
 ---

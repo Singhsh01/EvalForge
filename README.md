@@ -173,7 +173,7 @@ Implemented features and their tests, plus what is still planned:
 | Load test (`make perf`), classic-ML benchmark on 3 public datasets (`make ml-benchmark`) | measured — [results](docs/results) |
 | Real-LLM benchmark (`make llm-benchmark`, local Ollama) | harness ready; **no valid run yet** |
 
-An independent-style [engineering audit](docs/audit/AUDIT-REPORT.md) found and fixed 20 issues
+An [engineering audit](docs/audit/AUDIT-REPORT.md) of the merged release found and fixed 20 issues
 (including a model-artifact code-execution path and a rate-limit bypass), each with a regression test,
 and documents what remains open. Details and commands: [docs/results/test-report.md](docs/results/test-report.md).
 
