@@ -27,8 +27,10 @@ from evalforge.schemas import (
     TrainRequest,
 )
 from evalforge.services import jobs
+from evalforge.services.auth import require
 
-router = APIRouter(prefix="/api", tags=["experiments"])
+router = APIRouter(prefix="/api", tags=["experiments"], dependencies=[Depends(require("viewer"))])
+Engineer = Depends(require("engineer"))
 
 # Direction of "better" for comparison; metrics not listed are informational.
 HIGHER_IS_BETTER = {
@@ -61,7 +63,7 @@ def run_out(r: TrainingRun, cls: type[RunOut] = RunOut) -> RunOut:
     )
 
 
-@router.post("/runs", response_model=LaunchResponse, status_code=202)
+@router.post("/runs", response_model=LaunchResponse, status_code=202, dependencies=[Engineer])
 def launch_run(req: TrainRequest, db: Session = Depends(get_db)) -> LaunchResponse:
     version = db.get(DatasetVersion, req.dataset_version_id)
     if version is None:
@@ -187,7 +189,12 @@ def get_run(run_id: str, db: Session = Depends(get_db)) -> RunDetail:
     return out.model_copy(update={"job": JobOut.model_validate(r.job)})  # type: ignore[return-value]
 
 
-@router.post("/runs/{run_id}/evaluations", response_model=LaunchResponse, status_code=202)
+@router.post(
+    "/runs/{run_id}/evaluations",
+    response_model=LaunchResponse,
+    status_code=202,
+    dependencies=[Engineer],
+)
 def launch_evaluation(
     run_id: str, req: EvaluateRequest, db: Session = Depends(get_db)
 ) -> LaunchResponse:

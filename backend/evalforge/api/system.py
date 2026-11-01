@@ -17,6 +17,7 @@ from evalforge.ml.algorithms import catalogue
 from evalforge.models import AuditEvent, Dataset, DatasetVersion, Job, JobStatus, TrainingRun
 from evalforge.services import datasets as dsvc
 from evalforge.services import tracking
+from evalforge.services.auth import require
 
 router = APIRouter(prefix="/api", tags=["system"])
 
@@ -66,7 +67,7 @@ def meta() -> dict[str, Any]:
     }
 
 
-@router.get("/overview")
+@router.get("/overview", dependencies=[Depends(require("viewer"))])
 def overview(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Aggregates computed from persisted records only — empty when nothing has run."""
     status_counts = dict(
@@ -144,7 +145,7 @@ def overview(db: Session = Depends(get_db)) -> dict[str, Any]:
     }
 
 
-@router.post("/demo/breast-cancer", status_code=201)
+@router.post("/demo/breast-cancer", status_code=201, dependencies=[Depends(require("engineer"))])
 def load_demo(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Register the UCI Breast Cancer Wisconsin (Diagnostic) dataset bundled with scikit-learn.
 

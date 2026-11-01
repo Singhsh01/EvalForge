@@ -12,9 +12,13 @@ from evalforge.db import get_db
 from evalforge.models import Dataset, DatasetVersion
 from evalforge.schemas import DatasetOut, DatasetVersionDetail, DatasetVersionSummary
 from evalforge.services import datasets as svc
+from evalforge.services.auth import require
 from evalforge.services.storage import DatasetParseError, load_frame
 
-router = APIRouter(prefix="/api/datasets", tags=["datasets"])
+router = APIRouter(
+    prefix="/api/datasets", tags=["datasets"], dependencies=[Depends(require("viewer"))]
+)
+Engineer = Depends(require("engineer"))
 NAME_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9_.\- ]{1,63}$"
 
 
@@ -59,7 +63,9 @@ def list_datasets(db: Session = Depends(get_db)) -> list[DatasetOut]:
     return [dataset_out(d) for d in rows]
 
 
-@router.post("", response_model=DatasetOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=DatasetOut, status_code=status.HTTP_201_CREATED, dependencies=[Engineer]
+)
 async def create_dataset(
     file: Annotated[UploadFile, File(description="CSV, JSON array or JSON Lines")],
     name: Annotated[str, Form(pattern=NAME_PATTERN)],
@@ -98,7 +104,12 @@ def get_dataset(dataset_id: str, db: Session = Depends(get_db)) -> DatasetOut:
     return dataset_out(ds)
 
 
-@router.post("/{dataset_id}/versions", response_model=DatasetVersionDetail, status_code=201)
+@router.post(
+    "/{dataset_id}/versions",
+    response_model=DatasetVersionDetail,
+    status_code=201,
+    dependencies=[Engineer],
+)
 async def add_version(
     dataset_id: str,
     file: Annotated[UploadFile, File()],
