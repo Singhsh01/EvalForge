@@ -14,6 +14,18 @@ const ACTION_LABEL: Record<string, string> = {
   "dataset_version.created": "Dataset version validated",
   "run.launched": "Training run launched",
   "run.completed": "Training run logged to MLflow",
+  "model.registered": "Model version registered",
+  "model.promoted": "Champion promoted",
+  "approval.requested": "Approval requested",
+  "approval.executed": "Approval executed",
+  "approval.rejected": "Approval rejected",
+  "deployment.created": "Deployment created",
+  "deployment.rolled_back": "Deployment rolled back",
+  "pipeline.triggered": "Pipeline triggered",
+  "incident.opened": "Incident opened",
+  "copilot.session": "Copilot investigation",
+  "eval.launched": "Evaluation launched",
+  "auth.login": "Signed in",
 };
 
 export default function OverviewPage() {
@@ -27,18 +39,20 @@ export default function OverviewPage() {
 
   const c = ov.data?.counts;
   const hasRuns = (c?.runs_by_status?.succeeded ?? 0) > 0;
+  const live = (n?: number) => (n ? "live" : "ready") as Stage["state"];
   const stages: Stage[] = [
-    { key: "data", label: "Data", detail: c ? `${c.dataset_versions} validated versions` : "Upload & validate", state: c?.dataset_versions ? "live" : "ready" },
-    { key: "train", label: "Training", detail: "3 algorithms, CPU", state: c?.runs ? "live" : "ready" },
+    { key: "data", label: "Data", detail: c ? `${c.dataset_versions} validated versions` : "Upload & validate", state: live(c?.dataset_versions) },
+    { key: "train", label: "Training", detail: `${c?.runs ?? 0} runs, CPU`, state: live(c?.runs) },
     { key: "track", label: "Tracking", detail: "MLflow runs & models", state: hasRuns ? "live" : "ready" },
-    { key: "eval", label: "Evaluation", detail: "Fixed holdout + re-scoring", state: hasRuns ? "live" : "ready" },
-    { key: "registry", label: "Registry", detail: "Aliases & approvals", state: "planned" },
-    { key: "deploy", label: "Deployment", detail: "Serving & rollback", state: "planned" },
-    { key: "monitor", label: "Monitoring", detail: "Latency, errors, quality", state: "planned" },
-    { key: "drift", label: "Drift", detail: "Evidently reports", state: "planned" },
-    { key: "retrain", label: "Retraining", detail: "Prefect flow", state: "planned" },
-    { key: "reeval", label: "Re-evaluation", detail: "Quality gates", state: "planned" },
+    { key: "eval", label: "Evaluation", detail: `${c?.eval_runs ?? 0} LLM/agent eval runs`, state: hasRuns || c?.eval_runs ? "live" : "ready" },
+    { key: "registry", label: "Registry", detail: `${c?.model_versions ?? 0} versions · ${c?.champions ?? 0} champion`, state: live(c?.model_versions) },
+    { key: "deploy", label: "Deployment", detail: `${c?.production_deployments ?? 0} in production`, state: live(c?.active_deployments) },
+    { key: "monitor", label: "Monitoring", detail: "Traces, metrics, health", state: live(c?.active_deployments) },
+    { key: "drift", label: "Drift", detail: `${c?.drift_reports ?? 0} reports`, state: live(c?.drift_reports) },
+    { key: "retrain", label: "Retraining", detail: `${c?.incident_retrains ?? 0} incident-driven`, state: live(c?.incident_retrains) },
+    { key: "reeval", label: "Re-evaluation", detail: `${c?.pipeline_runs ?? 0} gated pipeline runs`, state: live(c?.pipeline_runs) },
   ];
+
 
   return (
     <>
@@ -54,15 +68,15 @@ export default function OverviewPage() {
       <ErrorNote error={ov.error ?? demo.error} />
 
       <Panel className="mb-6 px-6 py-6" title="Model lifecycle"
-        subtitle="Filled: running with data · ringed: built, waiting for data · dim: scheduled for a later phase">
+        subtitle="Filled: stage holds real records · ringed: available, no records yet">
         <ForgeLine stages={stages} />
       </Panel>
 
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <Panel><Stat label="Datasets" value={c?.datasets ?? "—"} sub={`${c?.dataset_versions ?? 0} versions`} /></Panel>
         <Panel><Stat label="Training runs" value={c?.runs ?? "—"} sub={`${c?.runs_by_status?.succeeded ?? 0} succeeded · ${c?.runs_by_status?.failed ?? 0} failed`} /></Panel>
-        <Panel><Stat label="Active jobs" value={c?.active_jobs ?? "—"} sub="queued or running" /></Panel>
-        <Panel><Stat label="Compute spent" value={ov.data ? `${num(ov.data.total_training_seconds, 1)} s` : "—"} sub="total model fitting time" /></Panel>
+        <Panel><Stat label="Pending approvals" value={<Link href="/approvals" className="hover:text-ember">{c?.pending_approvals ?? "—"}</Link>} sub="production changes waiting" /></Panel>
+        <Panel><Stat label="Open incidents" value={<Link href="/incidents" className="hover:text-ember">{c?.incidents_open ?? "—"}</Link>} sub={`${c?.drift_reports ?? 0} drift reports · ${c?.rollbacks ?? 0} rollbacks`} /></Panel>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-5">

@@ -40,6 +40,40 @@ class Settings(BaseSettings):
     max_rows: int = Field(default=2_000_000, ge=1)
     max_columns: int = Field(default=500, ge=1)
 
+    # --- Security --------------------------------------------------------------------
+    bootstrap_password: str | None = None  # initial admin/engineer/approver/viewer password
+    token_ttl_hours: int = Field(default=12, ge=1, le=24 * 30)
+    allow_self_approval: bool = False  # separation of duties; enable only for solo demos
+    rate_limit_login_per_min: int = 10
+    rate_limit_write_per_min: int = 240
+    rate_limit_serve_per_min: int = 1200
+
+    # --- Serving / governance -------------------------------------------------------
+    gate_min_f1: float = 0.80
+    gate_max_f1_regression: float = 0.01  # candidate may trail champion by at most this
+    gate_max_p95_latency_ms: float = 250.0
+    model_cache_size: int = Field(default=4, ge=1, le=32)
+
+    # --- LLM providers (optional; nothing is called unless configured) --------------
+    anthropic_api_key: str | None = None
+    anthropic_base_url: str = "https://api.anthropic.com"
+    openai_api_key: str | None = None
+    openai_base_url: str | None = None  # any OpenAI-compatible endpoint (vLLM, Ollama, ...)
+    llm_timeout_seconds: float = 60.0
+    copilot_llm_model: str | None = None  # e.g. "anthropic:claude-sonnet-4-5"; None = rules planner
+
+    scheduler_enabled: bool = True
+    scheduler_interval_seconds: float = 30.0
+
+    # --- Observability --------------------------------------------------------------
+    tracing_enabled: bool = True
+    otlp_endpoint: str | None = None  # e.g. http://otel-collector:4318
+    service_name: str = "evalforge-api"
+
+    # --- Copilot budgets --------------------------------------------------------------
+    copilot_max_steps: int = Field(default=12, ge=1, le=50)
+    copilot_timeout_seconds: float = Field(default=60.0, ge=1)
+
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     git_commit: str | None = None  # injected by CI / Docker build when .git is absent
 

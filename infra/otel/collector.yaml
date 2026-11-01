@@ -1,0 +1,21 @@
+# OpenTelemetry Collector: receives OTLP from the API/worker, forwards traces to Jaeger.
+receivers:
+  otlp:
+    protocols:
+      http: { endpoint: 0.0.0.0:4318 }
+processors:
+  batch: {}
+  attributes/redact:          # defence in depth; EvalForge already redacts before export
+    actions:
+      - { key: authorization, action: delete }
+      - { key: api_key, action: delete }
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls: { insecure: true }
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [attributes/redact, batch]
+      exporters: [otlp/jaeger]

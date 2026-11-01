@@ -27,9 +27,15 @@ def settings_env(tmp_path, monkeypatch) -> Iterator[None]:
 def _clear() -> None:
     from evalforge import db
     from evalforge.config import get_settings
-    from evalforge.services import jobs, tracking
+    from evalforge.services import jobs, model_cache, tracking
+    from evalforge.services.auth import limiter
 
     get_settings.cache_clear()
+    limiter.reset()
+    from evalforge.observability import tracing
+
+    tracing.reset()
+    model_cache.clear()
     db.reset_caches()
     tracking.configure.cache_clear()
     jobs._pool.cache_clear()
@@ -48,7 +54,21 @@ def client(settings_env) -> Iterator[TestClient]:
             for t in ("jobkind", "jobstatus", "tasktype", "versionstatus"):
                 c.exec_driver_sql(f"DROP TYPE IF EXISTS {t}")
     with TestClient(create_app()) as c:
+        c.headers["Authorization"] = f"Bearer {login(c, 'admin')}"
         yield c
+
+
+DEV_PASSWORD = "evalforge-dev"
+
+
+def login(c: TestClient, username: str) -> str:
+    r = c.post("/api/auth/login", json={"username": username, "password": DEV_PASSWORD})
+    assert r.status_code == 200, r.text
+    return r.json()["token"]
+
+
+def as_user(c: TestClient, username: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {login(c, username)}"}
 
 
 def mixed_frame(n: int = 240, seed: int = 0) -> pd.DataFrame:

@@ -18,36 +18,69 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from functools import lru_cache
 
+from opentelemetry import context as otel_context
+from opentelemetry import propagate, trace
+
 from evalforge.config import get_settings
 from evalforge.db import session_scope
 from evalforge.models import Job, JobKind, JobStatus
+from evalforge.observability import metrics, tracing
 
 log = logging.getLogger(__name__)
 
 
 def execute(job_id: str) -> None:
     """Entry point for every executor. Never raises — failures are recorded."""
-    from evalforge.services import training
-
     with session_scope() as db:
         job = db.get(Job, job_id)
         if job is None or job.status not in (JobStatus.queued, JobStatus.running):
             return
+        carrier = dict((job.payload or {}).get("_trace") or {})
+    parent = propagate.extract(carrier) if carrier else None
+    token = otel_context.attach(parent) if parent is not None else None
+    try:
+        with tracing.span(
+            f"job.{job_id[:8]}", {"job.id": job_id}, kind=trace.SpanKind.CONSUMER
+        ) as sp:
+            _execute(job_id, sp)
+    finally:
+        if token is not None:
+            otel_context.detach(token)
+
+
+def _execute(job_id: str, sp) -> None:  # type: ignore[no-untyped-def]
+    from evalforge.services import training
+
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        assert job is not None
         job.status, job.stage = JobStatus.running, "starting"
         job.started_at = datetime.now(UTC)
         job.attempts += 1
         kind = job.kind
+    sp.set_attributes({"job.kind": kind.value})
     try:
-        handler = {JobKind.train: training.run_training, JobKind.evaluate: training.run_evaluation}
+        from evalforge.services import evals, pipelines
+
+        handler = {
+            JobKind.train: training.run_training,
+            JobKind.evaluate: training.run_evaluation,
+            JobKind.pipeline: pipelines.execute_run,
+            JobKind.eval_suite: evals.execute_run,
+        }
         result = handler[kind](job_id)
         with session_scope() as db:
             job = db.get(Job, job_id)
             assert job is not None
             job.status, job.result, job.progress = JobStatus.succeeded, result, 1.0
             job.finished_at = datetime.now(UTC)
+            job.result = {**(result or {}), "trace_id": tracing.current_trace_id()}
+        metrics.JOBS.labels(kind.value, "succeeded").inc()
     except Exception as exc:
         log.exception("job %s failed", job_id)
         msg = f"{type(exc).__name__}: {exc}"
+        sp.error(msg)
+        metrics.JOBS.labels(kind.value, "failed").inc()
         with session_scope() as db:
             job = db.get(Job, job_id)
             assert job is not None
@@ -81,6 +114,13 @@ def _queue():  # type: ignore[no-untyped-def]
 
 
 def submit(job_id: str) -> None:
+    carrier: dict[str, str] = {}
+    propagate.inject(carrier)
+    if carrier:
+        with session_scope() as db:
+            job = db.get(Job, job_id)
+            if job is not None:
+                job.payload = {**(job.payload or {}), "_trace": carrier}
     mode = get_settings().executor
     if mode == "sync":
         execute(job_id)

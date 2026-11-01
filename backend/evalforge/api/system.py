@@ -17,6 +17,7 @@ from evalforge.ml.algorithms import catalogue
 from evalforge.models import AuditEvent, Dataset, DatasetVersion, Job, JobStatus, TrainingRun
 from evalforge.services import datasets as dsvc
 from evalforge.services import tracking
+from evalforge.services.auth import require
 
 router = APIRouter(prefix="/api", tags=["system"])
 
@@ -66,7 +67,40 @@ def meta() -> dict[str, Any]:
     }
 
 
-@router.get("/overview")
+def _ops_counts(db: Session) -> dict[str, int]:
+    from evalforge.models import (
+        Approval,
+        CopilotSession,
+        Deployment,
+        DriftReport,
+        EvalRun,
+        Incident,
+        ModelVersion,
+        PipelineRun,
+    )
+
+    def n(model: Any, *where: Any) -> int:
+        return db.scalar(select(func.count()).select_from(model).where(*where)) or 0
+
+    return {
+        "model_versions": n(ModelVersion),
+        "champions": n(ModelVersion, ModelVersion.is_champion.is_(True)),
+        "active_deployments": n(Deployment, Deployment.status == "active"),
+        "production_deployments": n(
+            Deployment, Deployment.status == "active", Deployment.environment == "production"
+        ),
+        "rollbacks": n(Deployment, Deployment.status == "rolled_back"),
+        "pipeline_runs": n(PipelineRun),
+        "drift_reports": n(DriftReport),
+        "incidents_open": n(Incident, Incident.status != "resolved"),
+        "incident_retrains": n(PipelineRun, PipelineRun.trigger == "incident"),
+        "eval_runs": n(EvalRun),
+        "pending_approvals": n(Approval, Approval.status == "pending"),
+        "copilot_sessions": n(CopilotSession),
+    }
+
+
+@router.get("/overview", dependencies=[Depends(require("viewer"))])
 def overview(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Aggregates computed from persisted records only — empty when nothing has run."""
     status_counts = dict(
@@ -108,6 +142,7 @@ def overview(db: Session = Depends(get_db)) -> dict[str, Any]:
             "runs_by_status": {
                 k.value if hasattr(k, "value") else k: v for k, v in status_counts.items()
             },
+            **_ops_counts(db),
             "active_jobs": db.scalar(
                 select(func.count())
                 .select_from(Job)
@@ -144,7 +179,7 @@ def overview(db: Session = Depends(get_db)) -> dict[str, Any]:
     }
 
 
-@router.post("/demo/breast-cancer", status_code=201)
+@router.post("/demo/breast-cancer", status_code=201, dependencies=[Depends(require("engineer"))])
 def load_demo(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Register the UCI Breast Cancer Wisconsin (Diagnostic) dataset bundled with scikit-learn.
 

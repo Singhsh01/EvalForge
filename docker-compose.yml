@@ -2,7 +2,10 @@
 #
 #   docker compose up --build            # postgres, redis, mlflow, api, worker, web
 #
-# Memory budget (8 GB MacBook Air): limits below sum to ~2.3 GB.
+#   docker compose --profile observability up --build   # + OTel Collector, Jaeger, Prometheus, Grafana
+#
+# Memory budget (8 GB MacBook Air): core limits sum to ~2.3 GB; the observability
+# profile adds ~0.9 GB and is optional.
 # Nothing here needs a GPU or Kubernetes. For the lighter no-Docker profile see
 # `make dev` in the Makefile (SQLite + embedded MLflow + in-process jobs).
 name: evalforge
@@ -14,6 +17,11 @@ x-backend-env: &backend-env
   EVALFORGE_REDIS_URL: redis://redis:6379/0
   EVALFORGE_DATA_DIR: /data
   EVALFORGE_CORS_ORIGINS: '["http://localhost:3000"]'
+  EVALFORGE_BOOTSTRAP_PASSWORD: ${EVALFORGE_BOOTSTRAP_PASSWORD:-evalforge-dev}
+  EVALFORGE_OTLP_ENDPOINT: ${EVALFORGE_OTLP_ENDPOINT:-}
+  EVALFORGE_ANTHROPIC_API_KEY: ${EVALFORGE_ANTHROPIC_API_KEY:-}
+  EVALFORGE_OPENAI_BASE_URL: ${EVALFORGE_OPENAI_BASE_URL:-}
+  EVALFORGE_OPENAI_API_KEY: ${EVALFORGE_OPENAI_API_KEY:-}
 
 services:
   postgres:
@@ -87,6 +95,40 @@ services:
     ports: ["127.0.0.1:3000:3000"]
     depends_on:
       api: { condition: service_healthy }
+    mem_limit: 256m
+
+  # ---------------------------------------------------------------- observability profile
+  # Set EVALFORGE_OTLP_ENDPOINT=http://otel-collector:4318 in .env to export traces.
+  otel-collector:
+    profiles: [observability]
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    command: ["--config=/etc/otel/collector.yaml"]
+    volumes: ["./infra/otel/collector.yaml:/etc/otel/collector.yaml:ro"]
+    mem_limit: 192m
+
+  jaeger:
+    profiles: [observability]
+    image: jaegertracing/all-in-one:1.62.0
+    ports: ["127.0.0.1:16686:16686"]
+    mem_limit: 256m
+
+  prometheus:
+    profiles: [observability]
+    image: prom/prometheus:v2.55.0
+    volumes: ["./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    ports: ["127.0.0.1:9090:9090"]
+    mem_limit: 256m
+
+  grafana:
+    profiles: [observability]
+    image: grafana/grafana:11.3.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["127.0.0.1:3001:3000"]
     mem_limit: 256m
 
 volumes:

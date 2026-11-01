@@ -1,157 +1,123 @@
 # EvalForge architecture
 
-Status: Phase 1 (architecture) and Phase 2 (working vertical slice) are implemented and
-verified. Later phases are designed here so the data model and boundaries don't need to
-be re-cut, but they are not built yet — see [roadmap.md](roadmap.md).
+EvalForge is a single FastAPI control plane with a Next.js UI, a background worker, MLflow as
+the system of record for runs and models, and a relational metadata store for everything MLflow
+does not model: validated data versions, governance, deployments, evaluations, telemetry,
+incidents and agent sessions.
 
 ## 1. System context
 
 ```mermaid
 flowchart LR
-  user([Engineer]) -->|browser| web[Next.js web app<br/>:3000]
-  web -->|/api/* proxied| api[FastAPI control plane<br/>:8000]
-  api --> meta[(Metadata store<br/>PostgreSQL / SQLite)]
-  api -->|enqueue| q[(Redis queue)]
-  q --> worker[Job worker<br/>RQ SimpleWorker]
-  api -. thread executor .-> worker
+  user([Engineer / Approver / Viewer]) -->|browser| web[Next.js app :3000]
+  web -->|/api/* proxied| api[FastAPI control plane :8000]
+  api --> meta[(PostgreSQL / SQLite<br/>metadata, governance,<br/>spans, incidents)]
+  api -->|enqueue + trace context| q[(Redis / RQ)]
+  q --> worker[Worker]
+  api -. lite: thread pool .-> worker
   worker --> meta
-  worker -->|params, metrics, models| mlflow[MLflow tracking + registry<br/>:5000]
-  mlflow --> mlstore[(MLflow backend store)]
-  mlflow --> artifacts[(Model artifacts)]
-  worker --> files[(Dataset store<br/>content-addressed)]
-  api --> files
+  worker -->|runs, models, aliases| mlflow[MLflow tracking + registry]
+  api -->|load champion/canary| mlflow
+  api --> files[(Content-addressed<br/>dataset store)]
+  api -->|LLM calls, optional| llm[Anthropic / OpenAI-compatible]
+  api -->|OTLP, optional| otel[OTel Collector → Jaeger]
+  prom[Prometheus] -->|/metrics| api
+  graf[Grafana] --> prom
 ```
 
-Two profiles run the same code:
+| | Lite (`make dev`) | Full (`make compose-up`) | + observability profile |
+|---|---|---|---|
+| Metadata | SQLite (WAL) | PostgreSQL 16 | |
+| MLflow | embedded | MLflow server + Postgres | |
+| Jobs | thread pool | Redis + RQ worker | |
+| Telemetry | spans in DB, `/metrics` | same | + Collector, Jaeger, Prometheus, Grafana |
+| Memory | ~450 MB | ~2.3 GB limits | + ~0.9 GB |
 
-| | Lite (`make dev`) | Full (`docker compose up`) |
+## 2. Modules
+
+| Layer | Package | Responsibility |
 |---|---|---|
-| Metadata | SQLite (WAL) | PostgreSQL 16 |
-| MLflow | Embedded SQLite store, local artifacts | MLflow server, Postgres store, served artifacts |
-| Jobs | In-process thread pool (1 worker) | Redis + RQ worker process |
-| Memory | ~450 MB (API + Next dev) | ~2.3 GB limits in total |
-| Needs | `uv`, Node 20+ | Docker |
+| API | `api/auth, datasets, runs, ops, pipelines, llmops, monitoring, copilot, observability, system` | HTTP contracts, role checks |
+| Governance | `services/auth`, `services/governance` | tokens, roles, rate limits, approvals with executors |
+| ML lifecycle | `services/datasets, profiling, training, experiments, registry, serving, model_cache` | data versions, training, gates, deployments, inference |
+| Orchestration | `services/jobs`, `services/pipelines` | executors (thread/RQ/sync), DAG runs, retries, resume, schedules |
+| LLMOps | `llm/providers`, `llm/evaluators`, `services/evals` | provider abstraction, evaluators, suites, runs, regressions |
+| Monitoring | `services/drift` | KS/χ²/PSI drift, prediction drift, label-aware performance, incidents, retraining plans |
+| Agent | `copilot/tools`, `copilot/agent` | permissioned tools, planners, evidence validation, budgets |
+| Telemetry | `observability/tracing`, `observability/metrics` | OTel spans → DB/OTLP with redaction; Prometheus |
 
-Both were exercised in verification: the test suite runs on SQLite with the synchronous
-executor and against PostgreSQL; the demo evidence in `docs/results/phase2-demo.json` was
-produced with Postgres + MLflow server + Redis/RQ.
-
-## 2. Responsibilities and the source-of-truth split
-
-| Concern | System of record | Why |
-|---|---|---|
-| Run params, metrics, model artifacts, model lineage, (Phase 3) registry aliases | **MLflow** | Industry-standard UI and APIs; no reason to re-implement |
-| Dataset versions, profiles, quality checks, splits | **EvalForge DB** | MLflow datasets are references, not validated, versioned assets with checks |
-| Job lifecycle (queued → running → succeeded/failed, progress, logs) | **EvalForge DB** | Must be identical across executors and survive worker restarts |
-| Evaluations against other dataset versions, approvals, audit trail | **EvalForge DB** | Platform workflow state |
-
-Every `training_runs` row stores `mlflow_run_id` and `model_uri`; every MLflow run carries
-`evalforge.run_id`, `evalforge.dataset_version_id` and `evalforge.dataset_sha256` tags, so
-either side can be joined to the other. The integration test asserts this round-trip.
-
-## 3. Data model (Phase 2)
+## 3. Data model
 
 ```mermaid
 erDiagram
   datasets ||--o{ dataset_versions : has
-  dataset_versions ||--o{ training_runs : "trained on"
-  jobs ||--o| training_runs : executes
-  training_runs ||--o{ evaluations : "scored by"
-  dataset_versions ||--o{ evaluations : "scored on"
-  jobs ||--o| evaluations : executes
-  audit_events }o--|| datasets : "about any entity"
-
-  datasets { string id PK; string name UK; string target_column }
-  dataset_versions { string id PK; int version; string sha256; enum status; json schema; json profile; json quality_checks; json split }
-  jobs { string id PK; enum kind; enum status; string stage; float progress; json logs }
-  training_runs { string id PK; string algorithm; json hyperparameters; int seed; json metrics; json report; string mlflow_run_id; string model_uri; string git_commit }
-  evaluations { string id PK; string split; json metrics; json report }
-  audit_events { string id PK; string action; string entity_type; string entity_id; json data }
+  dataset_versions ||--o{ training_runs : trains
+  training_runs ||--o| model_versions : registered_as
+  model_versions ||--o{ deployments : deployed_as
+  deployments ||--o{ prediction_logs : serves
+  model_versions ||--o{ drift_reports : monitored_by
+  drift_reports ||--o{ incidents : opens
+  eval_suites ||--o{ eval_runs : run_as
+  eval_runs ||--o{ eval_case_results : scores
+  eval_runs ||--o{ incidents : opens
+  incidents ||--o{ incident_events : timeline
+  incidents ||--o{ copilot_sessions : investigated_by
+  agent_configs ||--o{ copilot_sessions : configures
+  prompts ||--o{ prompt_versions : versions
+  pipeline_runs ||--o{ pipeline_steps : steps
+  approvals ||--o{ deployments : authorises
+  users ||--o{ api_tokens : holds
 ```
 
-Key invariants:
+Plus `jobs` (lifecycle of every background task), `evaluations` (re-scoring of ML runs),
+`llm_calls`, `spans`, `pipeline_schedules` and `audit_events`. See
+[database-migrations.md](guides/database-migrations.md).
 
-* `(dataset_id, version)` and `(dataset_id, sha256)` are unique: identical bytes are never
-  stored twice, and version numbers are monotonic.
-* A version is `validated` or `rejected` at creation and never changes. Rejected versions
-  stay visible (with their failing checks) but cannot be trained on.
-* New versions must keep the target and all previous columns with the same kinds; added
-  columns are allowed. This prevents a model trained on v1 silently breaking on v2.
-* The holdout split is created once per version (stratified, seed 42, 20%) and persisted as
-  `split.npz`. All runs on a version are therefore evaluated on identical rows, which is
-  what makes comparison honest. The compare endpoint warns when runs span versions.
+## 4. Key flows
 
-Schema changes go through Alembic (`evalforge/migrations`); the API upgrades to head on
-start-up, and CI fails if the ORM and the migrations drift.
-
-## 4. Request and job flow — training
-
+### Governed promotion and deployment
 ```mermaid
 sequenceDiagram
-  participant UI
+  actor E as Engineer
+  actor A as Approver
   participant API
-  participant DB
-  participant Q as Executor
-  participant W as Worker
   participant ML as MLflow
-  UI->>API: POST /api/runs {version, algorithm, hyperparameters}
-  API->>API: validate hyperparameters against algorithm schema
-  API->>DB: insert job(queued) + training_run + audit event
-  API->>Q: submit(job_id)
-  API-->>UI: 202 {job, run}
-  Q->>W: execute(job_id)
-  W->>DB: job running, stage/progress/log updates
-  W->>W: load parquet + split, build Pipeline, CV (optional), fit, metrics, permutation importance, latency
-  W->>ML: start_run, log params/metrics/tags/dataset input/diagnostics, log_model (skops)
-  W->>DB: run metrics + report, holdout evaluation row, job succeeded
-  UI->>API: poll GET /api/runs/{id} (1 s while active)
+  E->>API: register run → model version (+ gate)
+  API->>ML: register_model, tags
+  E->>API: request promotion
+  API-->>E: approval (pending)
+  A->>API: approve (≠ requester)
+  API->>API: re-run gate (champion re-scored on candidate's holdout)
+  API->>ML: set alias champion → vN
+  E->>API: request production deploy (canary %)
+  A->>API: approve
+  API->>ML: load model (skops) · health check
+  API-->>A: executed (deployment id, health)
 ```
 
-Failure handling: `execute()` never raises. Exceptions are recorded on the job (message +
-truncated traceback) and on the run/evaluation. With the thread executor, jobs that were
-running when the API stopped are marked failed on next start-up instead of staying
-"running" forever. RQ jobs get a hard timeout (`EVALFORGE_JOB_TIMEOUT_SECONDS`).
+### Request → worker trace propagation
+The API injects the W3C trace context into the job payload; the worker (thread or RQ process)
+extracts it, so request, job, training, MLflow logging and pipeline-step spans share one trace.
 
-## 5. ML pipeline design
+### Drift → incident → controlled retraining
+`drift report` (reference = training split, current = logged predictions since T) →
+verdict (`no_drift` | statistical drift | `performance_degradation`) → incident → Copilot
+investigation → retraining **plan** (justified only by label-confirmed degradation and newer
+data) → approval → pipeline (`trigger: incident`) → gate vs champion → staging → promotion
+approval → production approval → re-measure.
 
-* One scikit-learn `Pipeline` = `ColumnTransformer` (median-impute + optional scaling for
-  numeric; most-frequent impute + one-hot with infrequent-category grouping for
-  categorical) + estimator. Preprocessing is fitted on the training split only and shipped
-  inside the logged model, so serving cannot drift from training.
-* Algorithms: logistic regression (baseline), random forest, histogram gradient boosting.
-  Hyperparameters are validated against a typed schema (type, range, choices); unknown keys
-  are rejected, so no arbitrary kwargs reach scikit-learn. The frontend form is generated
-  from the same schema (`GET /api/meta`).
-* Feature selection is automatic and recorded: target, identifier-like and constant columns
-  are dropped with reasons stored on the run.
-* Metrics are task-aware: binary metrics use the positive label (second label in sorted
-  order, shown in the UI); multiclass uses macro averaging and one-vs-rest ROC-AUC.
-  Reported alongside: train metrics and the generalisation gap, optional stratified
-  k-fold CV on the training split, permutation importance on the holdout (model-agnostic,
-  with std), and measured in-process latency.
-* Models are serialised with **skops** through MLflow (`serialization_format="skops"`),
-  so loading a model does not execute pickled code. Evaluation jobs load the model back
-  from MLflow rather than from memory, which exercises the real artifact path.
+### Copilot investigation
+plan (intent via rules or LLM) → tool calls (allow-list, budgets, spans) → analyse →
+hypotheses → **validate citations against tool evidence** → report; actions only as approvals.
 
-## 6. Security posture (current)
+## 5. Design decisions
+[ADR 0001–0010](adr): monorepo, MLflow as system of record, job execution, dataset versioning,
+laptop profile, pipeline orchestration, drift statistics, Copilot agent, auth & governance,
+observability.
 
-* Uploads: extension allow-list (CSV/JSON/JSONL), size limit enforced while reading, row
-  and column limits, duplicate-column rejection; parsed with pandas only — never
-  evaluated, never unpickled. Dataset names are pattern-restricted (they become paths and
-  MLflow experiment names); storage paths are derived from server-generated ids and hashes.
-* Hyperparameters: schema-validated, no pass-through.
-* Containers run as non-root; ports bind to 127.0.0.1 in compose.
-* Audit events for dataset creation/versioning and run launch/completion.
-* **Not yet implemented** (Phase 3+): authentication and RBAC, rate limiting, secret
-  storage for LLM provider keys, trace redaction, approval gates. The API must not be
-  exposed beyond localhost until authentication lands.
-
-## 7. Planned architecture for later phases
-
-| Phase | Additions | Boundary decisions already made |
-|---|---|---|
-| 3 MLOps infra | DVC remote for dataset files; Prefect flows wrapping the existing job handlers; MLflow registry with `champion`/`challenger` **aliases** (stages are deprecated); approval records; FastAPI serving endpoint loading `models:/<name>@champion`; deployment + rollback records | Job handlers are plain functions taking a job id, so Prefect tasks can call them unchanged |
-| 4 AI evaluation | Provider abstraction (Anthropic + OpenAI-compatible), prompt templates + versions, eval datasets of cases, deterministic / LLM-judge / RAG (Ragas) / agent evaluators, quality gates | Evaluations are already a separate table keyed by (subject, dataset version); LLM evals become another subject type |
-| 5 Observability | OpenTelemetry SDK in API and worker, OTel Collector, Prometheus metrics endpoint, Grafana dashboards, trace explorer UI, configurable redaction | Request-id middleware and `server-timing` headers exist; job logs are structured |
-| 6 Drift & retraining | Evidently reports against a version's training reference; prediction logging from serving; alert rules and incidents; Prefect retraining flow ending in an approval request, never auto-deploy | Schema-compatibility rule between versions is what makes reference/current comparison valid |
-| 7 Frontend | Registry, deployment, pipeline (React Flow), evaluation workbench, trace waterfall, monitoring screens | Modules already reserved in navigation with their phase |
+## 6. Deliberate limitations
+* One API process holds the scheduler loop and the in-memory rate limiter; multiple replicas need
+  a leader lock and Redis-backed limits.
+* Classification models only; the serving path runs in-process (no KServe/K8s).
+* Span retention is unbounded; add a retention job for long-running installs.
+* Real-LLM evaluation numbers require a provider key (none was available during development).

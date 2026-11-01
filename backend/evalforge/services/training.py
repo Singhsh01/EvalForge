@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
+from opentelemetry import trace
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 from evalforge.db import session_scope
@@ -25,6 +26,7 @@ from evalforge.models import (
     JobStatus,
     TrainingRun,
 )
+from evalforge.observability import tracing
 from evalforge.services import tracking
 from evalforge.services.profiling import load_split
 from evalforge.services.storage import load_frame
@@ -35,6 +37,9 @@ class JobReporter:
         self.job_id = job_id
 
     def update(self, stage: str, progress: float, message: str | None = None) -> None:
+        trace.get_current_span().add_event(
+            f"stage.{stage}", {"progress": progress, "message": message or ""}
+        )
         with session_scope() as db:
             job = db.get(Job, self.job_id)
             assert job is not None
@@ -105,7 +110,8 @@ def run_training(job_id: str) -> dict[str, Any]:
 
     rep.update("training", 0.35, f"Fitting {algo.label} on {len(X_train)} rows")
     t0 = time.perf_counter()
-    pipe.fit(X_train, y_train)
+    with tracing.span("model.fit", {"algorithm": algo_key, "rows": len(X_train)}):
+        pipe.fit(X_train, y_train)
     train_s = time.perf_counter() - t0
     # Parallelism helps fitting but adds thread-dispatch overhead to every predict call
     # (measured ~15x slower single-row latency for RandomForest with n_jobs=2).
@@ -133,6 +139,8 @@ def run_training(job_id: str) -> dict[str, Any]:
 
     rep.update("tracking", 0.85, "Logging run and model to MLflow")
     exp_id = tracking.experiment_for(ds_name)
+    log_span = tracing.tracer().start_span("mlflow.log_run", attributes={"experiment_id": exp_id})
+    trace_id = tracing.current_trace_id() or ""
     mlflow_run_id, model_uri = tracking.log_training_run(
         experiment_id=exp_id,
         run_name=f"{algo_key}-{run_id[:8]}",
@@ -152,6 +160,7 @@ def run_training(job_id: str) -> dict[str, Any]:
             "evalforge.dataset_version": str(version_no),
             "evalforge.dataset_version_id": version_id,
             "evalforge.dataset_sha256": sha,
+            "evalforge.trace_id": trace_id,
             "evalforge.split_seed": str(split["seed"]),
             "mlflow.source.git.commit": str(git["commit"]),
             "evalforge.git_dirty": str(git["dirty"]),
@@ -170,6 +179,8 @@ def run_training(job_id: str) -> dict[str, Any]:
             "split.json": split,
         },
     )
+    log_span.set_attribute("mlflow.run_id", mlflow_run_id)
+    log_span.end()
 
     with session_scope() as db:
         run = db.get(TrainingRun, run_id)
@@ -241,6 +252,8 @@ def run_evaluation(job_id: str) -> dict[str, Any]:
 
 
 def mark_failed(job_id: str, error: str) -> None:
+    from evalforge.models import EvalRun, PipelineRun
+
     with session_scope() as db:
         run = db.query(TrainingRun).filter_by(job_id=job_id).one_or_none()
         if run is not None:
@@ -248,3 +261,9 @@ def mark_failed(job_id: str, error: str) -> None:
         ev = db.query(Evaluation).filter_by(job_id=job_id).one_or_none()
         if ev is not None:
             ev.status, ev.error = JobStatus.failed, error
+        pr = db.query(PipelineRun).filter_by(job_id=job_id).one_or_none()
+        if pr is not None and pr.status not in ("succeeded", "awaiting_approval"):
+            pr.status, pr.error, pr.finished_at = "failed", error, datetime.now(UTC)
+        er = db.query(EvalRun).filter_by(job_id=job_id).one_or_none()
+        if er is not None:
+            er.status, er.error, er.finished_at = "failed", error, datetime.now(UTC)

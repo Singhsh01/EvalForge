@@ -5,16 +5,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from evalforge.db import get_db
-from evalforge.ml.algorithms import HyperparameterError, get_algorithm
 from evalforge.models import (
-    AuditEvent,
     DatasetVersion,
     Evaluation,
     Job,
     JobKind,
     JobStatus,
     TrainingRun,
-    VersionStatus,
 )
 from evalforge.schemas import (
     CompareOut,
@@ -27,8 +24,11 @@ from evalforge.schemas import (
     TrainRequest,
 )
 from evalforge.services import jobs
+from evalforge.services.auth import Principal, require
+from evalforge.services.experiments import RunRequestError, create_training_run
 
-router = APIRouter(prefix="/api", tags=["experiments"])
+router = APIRouter(prefix="/api", tags=["experiments"], dependencies=[Depends(require("viewer"))])
+Engineer = Depends(require("engineer"))
 
 # Direction of "better" for comparison; metrics not listed are informational.
 HIGHER_IS_BETTER = {
@@ -62,42 +62,23 @@ def run_out(r: TrainingRun, cls: type[RunOut] = RunOut) -> RunOut:
 
 
 @router.post("/runs", response_model=LaunchResponse, status_code=202)
-def launch_run(req: TrainRequest, db: Session = Depends(get_db)) -> LaunchResponse:
-    version = db.get(DatasetVersion, req.dataset_version_id)
-    if version is None:
-        raise HTTPException(404, "Dataset version not found")
-    if version.status != VersionStatus.validated:
-        raise HTTPException(
-            422,
-            "Dataset version failed blocking quality checks; fix the data and upload a new version",
-        )
+def launch_run(
+    req: TrainRequest,
+    p: Principal = Depends(require("engineer")),
+    db: Session = Depends(get_db),
+) -> LaunchResponse:
     try:
-        algo = get_algorithm(req.algorithm)
-        hp = algo.validate(req.hyperparameters)
-    except HyperparameterError as exc:
-        raise HTTPException(422, str(exc)) from exc
-
-    job = Job(kind=JobKind.train, payload=req.model_dump())
-    db.add(job)
-    db.flush()
-    run = TrainingRun(
-        job_id=job.id,
-        dataset_version_id=version.id,
-        algorithm=algo.key,
-        hyperparameters=hp,
-        seed=req.seed,
-        cv_folds=req.cv_folds,
-    )
-    db.add(run)
-    db.flush()
-    db.add(
-        AuditEvent(
-            action="run.launched",
-            entity_type="training_run",
-            entity_id=run.id,
-            data={"algorithm": algo.key, "hyperparameters": hp, "dataset_version_id": version.id},
+        job, run = create_training_run(
+            db,
+            dataset_version_id=req.dataset_version_id,
+            algorithm=req.algorithm,
+            hyperparameters=req.hyperparameters,
+            seed=req.seed,
+            cv_folds=req.cv_folds,
+            actor=p.username,
         )
-    )
+    except RunRequestError as exc:
+        raise HTTPException(exc.status, str(exc)) from exc
     db.commit()
     jobs.submit(job.id)
     db.refresh(job)
@@ -187,7 +168,12 @@ def get_run(run_id: str, db: Session = Depends(get_db)) -> RunDetail:
     return out.model_copy(update={"job": JobOut.model_validate(r.job)})  # type: ignore[return-value]
 
 
-@router.post("/runs/{run_id}/evaluations", response_model=LaunchResponse, status_code=202)
+@router.post(
+    "/runs/{run_id}/evaluations",
+    response_model=LaunchResponse,
+    status_code=202,
+    dependencies=[Engineer],
+)
 def launch_evaluation(
     run_id: str, req: EvaluateRequest, db: Session = Depends(get_db)
 ) -> LaunchResponse:

@@ -44,6 +44,25 @@ export function Button({ variant = "primary", loading, className, children, ...r
 }
 
 const STATUS: Record<string, string> = {
+  executed: "text-pass bg-pass/10 ring-pass/25",
+  active: "text-pass bg-pass/10 ring-pass/25",
+  approved: "text-pass bg-pass/10 ring-pass/25",
+  completed: "text-pass bg-pass/10 ring-pass/25",
+  resolved: "text-pass bg-pass/10 ring-pass/25",
+  released: "text-pass bg-pass/10 ring-pass/25",
+  pending: "text-warn bg-warn/10 ring-warn/25",
+  awaiting_approval: "text-warn bg-warn/10 ring-warn/25",
+  waiting_approval: "text-warn bg-warn/10 ring-warn/25",
+  open: "text-fail bg-fail/10 ring-fail/25",
+  investigating: "text-ember bg-ember/10 ring-ember/25",
+  mitigating: "text-ember bg-ember/10 ring-ember/25",
+  budget_exceeded: "text-warn bg-warn/10 ring-warn/25",
+  rolled_back: "text-warn bg-warn/10 ring-warn/25",
+  skipped: "text-white/40 bg-white/5 ring-white/10",
+  superseded: "text-white/40 bg-white/5 ring-white/10",
+  cancelled: "text-white/40 bg-white/5 ring-white/10",
+  draft: "text-steel bg-steel/10 ring-steel/25",
+  registered: "text-steel bg-steel/10 ring-steel/25",
   succeeded: "text-pass bg-pass/10 ring-pass/25",
   validated: "text-pass bg-pass/10 ring-pass/25",
   running: "text-ember bg-ember/10 ring-ember/25",
@@ -57,7 +76,7 @@ export function Status({ value }: { value: string }) {
     <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1",
       STATUS[value] ?? "text-white/60 bg-white/5 ring-white/10")}>
       {value === "running" && <span className="size-1.5 animate-pulse rounded-full bg-current" />}
-      {value}
+      {value.replaceAll("_", " ")}
     </span>
   );
 }
@@ -105,4 +124,35 @@ export function ErrorNote({ error }: { error: unknown }) {
 
 export function Mono({ children, className }: { children: ReactNode; className?: string }) {
   return <code className={cn("font-mono text-[12px] text-white/60", className)}>{children}</code>;
+}
+
+export function JsonBlock({ value, className }: { value: unknown; className?: string }) {
+  return (
+    <pre className={cn("max-h-80 overflow-auto rounded-lg bg-ink-950/70 p-3 font-mono text-[11px] leading-relaxed text-white/70", className)}>
+      {JSON.stringify(value, null, 2)}
+    </pre>
+  );
+}
+
+export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "pass" | "fail" | "warn" | "ember" | "steel" }) {
+  const t = {
+    neutral: "bg-white/5 text-white/65 ring-white/10",
+    pass: "bg-pass/10 text-pass ring-pass/25",
+    fail: "bg-fail/10 text-fail ring-fail/25",
+    warn: "bg-warn/10 text-warn ring-warn/25",
+    ember: "bg-ember/10 text-ember ring-ember/25",
+    steel: "bg-steel/10 text-steel ring-steel/25",
+  }[tone];
+  return <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1", t)}>{children}</span>;
+}
+
+export function Th({ children, right }: { children?: ReactNode; right?: boolean }) {
+  return <th className={cn("px-2 pb-2 text-xs font-normal text-white/45 first:pl-0", right ? "text-right" : "text-left")}>{children}</th>;
+}
+
+export function Notice({ children, tone = "pass" }: { children: ReactNode; tone?: "pass" | "warn" }) {
+  return (
+    <p role="status" className={cn("rounded-lg border px-3 py-2 text-sm",
+      tone === "pass" ? "border-pass/30 bg-pass/10 text-pass" : "border-warn/30 bg-warn/10 text-warn")}>{children}</p>
+  );
 }
