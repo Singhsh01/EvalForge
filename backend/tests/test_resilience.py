@@ -283,3 +283,68 @@ def test_single_pass_serving_matches_pipeline_predict(client, churn_csv):
         if X[c].map(lambda v: isinstance(v, int | float) or v is None).all():
             X[c] = pd.to_numeric(X[c], errors="coerce")
     assert served == [str(p) for p in model.predict(X)]
+
+
+def test_slow_model_call_does_not_hold_the_database_write_lock(client):
+    """RES-05: an agent evaluation kept a write transaction open across slow model calls
+    (local LLM: seconds per call), so every other write - including the token bookkeeping
+    of a plain GET - timed out with 'database is locked' and returned 500. Found by the
+    first real Ollama benchmark run."""
+    import json
+    import threading
+    from datetime import UTC, datetime
+
+    from sqlalchemy import create_engine, text
+
+    from evalforge.config import get_settings
+    from evalforge.db import get_engine, session_scope
+    from evalforge.llm.providers import FixtureProvider
+    from evalforge.models import EvalSuite
+    from evalforge.services import evals, jobs
+
+    entered, release = threading.Event(), threading.Event()
+
+    def slow(system, user):
+        entered.set()
+        release.wait(20)
+        return json.dumps({"action": "final", "findings": []})
+
+    FixtureProvider.responders["slow"] = slow
+    try:
+        cfg = client.post(
+            "/api/copilot/configs", json={"config": {"planner": "llm:fixture:slow"}}
+        ).json()
+        suite = client.post(
+            "/api/evals/suites",
+            json={
+                "name": "slow-agent",
+                "kind": "agent",
+                "cases": [{"id": "c1", "question": "overview"}],
+                "evaluators": [{"type": "task_completion"}],
+            },
+        ).json()
+        with session_scope() as db:
+            run = evals.create_run(
+                db,
+                db.get(EvalSuite, suite["id"]),
+                {"type": "agent", "agent_config_id": cfg["id"]},
+                "engineer",
+            )
+            job_id = run.job_id
+        worker = threading.Thread(target=jobs.execute, args=(job_id,))
+        worker.start()
+        assert entered.wait(20), "planner was never called"
+        # While the model is "thinking", an unrelated write must go through promptly.
+        url = get_settings().resolved_database_url
+        probe = (
+            create_engine(url, connect_args={"timeout": 2})
+            if url.startswith("sqlite")
+            else get_engine()
+        )
+        with probe.begin() as c:
+            c.execute(text("UPDATE api_tokens SET last_used_at = :t"), {"t": datetime.now(UTC)})
+        release.set()
+        worker.join(30)
+    finally:
+        release.set()
+        FixtureProvider.responders.clear()

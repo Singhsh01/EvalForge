@@ -265,7 +265,7 @@ def run_subject(
             "status": res["status"],
             "tool_calls": res["tool_calls"],
             "steps": len(res["tool_calls"]),
-        }, {"latency_ms": res["duration_ms"]}
+        }, {"latency_ms": res["duration_ms"], **(res.get("usage") or {})}
     raise EvalError(f"Unknown subject type {t}")
 
 
@@ -288,6 +288,10 @@ def execute_run(job_id: str) -> dict[str, Any]:
                 {"eval.suite": f"{suite.name}@v{suite.version}", "eval.subject": run.subject_key}
             )
             retriever = Retriever(suite.corpus) if suite.kind == "rag" and suite.corpus else None
+            # Commit before any case calls a model: a pending UPDATE would otherwise hold
+            # SQLite's write lock for the whole (possibly minutes-long) first case and make
+            # every other write in the platform time out (audit RES-05).
+            db.commit()
             for case in suite.cases:
                 _run_case(db, run, suite, case, retriever)
                 db.commit()

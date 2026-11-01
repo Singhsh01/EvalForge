@@ -17,11 +17,11 @@ Where a result is missing (real-LLM evaluation), the report says so.
 
 | | Before audit | After audit |
 |---|---|---|
-| Backend tests (SQLite / PostgreSQL 16) | 55 / 55 | **97 / 97** |
+| Backend tests (SQLite / PostgreSQL 16) | 55 / 55 | **98 / 98** |
 | Frontend component tests | none | **24** (Vitest + Testing Library) |
 | Browser e2e | navigation smoke | smoke **+ 10 operation checks** (two-person approval, deploy, rollback, viewer) |
-| Findings | — | **26**: 1 critical, 5 high, 15 medium, 5 low |
-| Fixed and covered by a test | — | **20** |
+| Findings | — | **27**: 1 critical, 6 high, 15 medium, 5 low |
+| Fixed and covered by a test | — | **21** |
 | Partly fixed | — | 1 (BEN-02: interval + advisory check added; blocking rule is an owner decision) |
 | Open (documented, with recommendation) | — | 5 (RES-04, PERF-02, PERF-04, UX-01, OPS-01), plus residual risks in §5 |
 | `npm audit` (all deps) / `bandit` / `ruff` / migration drift | — | clean / clean / clean / in sync (SQLite + PostgreSQL) |
@@ -70,6 +70,7 @@ that failed before the fix and passes after it.
 |---|---|---|---|---|
 | RES-03 | High | **Two active stable deployments.** Two deploys racing for the same model/environment both committed an active stable (reproduced on SQLite **and** PostgreSQL) — routing and rollback became ambiguous. | Partial unique index *one active (model, environment, role)* (migration 0005, which first retires historical duplicates); the losing transaction gets 409. | `test_concurrent_deploys_leave_exactly_one_active_stable` |
 | RES-01 | High | **Lost workers left jobs `running` forever.** Orphan recovery existed only for the thread executor; with RQ (full profile) a killed/OOM worker left the job, its training run and any waiting pipeline stuck. | Stale-job reaper for every executor (running past `job_timeout + 5 min` → failed, linked runs failed) at startup and every scheduler tick. | `test_stale_running_job_is_reaped_for_any_executor` |
+| RES-05 | High | **Slow model calls locked the whole platform (lite profile).** An evaluation left an `UPDATE` uncommitted before its first case, so SQLite's write lock was held across the case's model calls (seconds each on a local 3B model, up to 8 calls). Every other write timed out after 30 s, including a plain GET's token bookkeeping, which returned 500. Found by the **first real Ollama run**; invisible with fast test doubles. | Commit before any case calls a model; token `last_used_at` update is best-effort (a busy database no longer turns reads into 500s). Also: LLM-planner token usage is now recorded in agent evaluations (it was 0). | `test_slow_model_call_does_not_hold_the_database_write_lock` |
 | RES-02 | Medium | **Canary promotion trusted stale health.** Promotion reused the health result recorded at canary deploy time; a canary whose artifact had since broken was promoted to 100 %. | Health is re-checked at promotion; failure aborts and keeps stable. | `test_canary_promotion_rechecks_health` |
 | — | ✅ | Unhealthy deploys are recorded and the current stable keeps serving; rollback refuses a broken target; an approved production deploy with a broken artifact fails the approval without activating anything; 40 concurrent predictions are all served and logged; restart marks interrupted thread jobs failed. | (verified) | `test_unhealthy_deploy_…`, `test_rollback_refuses_broken_target_…`, `test_approval_executor_failure_…`, `test_concurrent_predictions_…`, `test_restart_marks_…` |
 | RES-04 | Low | **Open.** In the approval path, a failed-health deployment row is written inside the executor's savepoint and rolled back with it; the approval itself records the error, so the audit trail keeps the reason but not the deployment row. | Recommendation: write the failed-health record in its own transaction. | — |
@@ -108,7 +109,7 @@ that failed before the fix and passes after it.
 
 | Suite | Result |
 |---|---|
-| Backend `pytest`: 97 tests across 14 files (unit, API, integration, security, agent robustness, resilience, statistics) | 97/97 SQLite, 97/97 PostgreSQL 16 |
+| Backend `pytest`: 98 tests across 14 files (unit, API, integration, security, agent robustness, resilience, statistics) | 98/98 SQLite, 98/98 PostgreSQL 16 |
 | Frontend `vitest`: 24 component tests (API client, sign-in, DAG/lineage, ECharts wrapper, optional brand background, UI primitives) | 24/24 |
 | Browser e2e `npm run e2e` (sign-in, 15 modules, live Copilot, auth redirect) | pass |
 | Browser e2e `npm run e2e:ops` (two-person production rollback across two sessions, staging deploy + rollback, viewer read-only), with **default** rate limits on a fresh database | 10/10 |

@@ -165,7 +165,7 @@ Implemented features and their tests, plus what is still planned:
 
 | Suite | Result |
 |---|---|
-| Backend: 97 tests (unit, API contract, integration, security attacks, Copilot robustness, resilience/fault injection, statistics) | ✅ SQLite · ✅ PostgreSQL |
+| Backend: 98 tests (unit, API contract, integration, security attacks, Copilot robustness, resilience/fault injection, statistics) | ✅ SQLite · ✅ PostgreSQL |
 | Lint (ruff), bandit, migration-drift check, `npm audit` | ✅ |
 | Frontend: 24 component tests (Vitest), type check, production build | ✅ |
 | Browser e2e: smoke across 15 modules + real operations (two-person production rollback, deploy/rollback, viewer read-only) | ✅ |
@@ -173,7 +173,7 @@ Implemented features and their tests, plus what is still planned:
 | Load test (`make perf`), classic-ML benchmark on 3 public datasets (`make ml-benchmark`) | measured — [results](docs/results) |
 | Real-LLM benchmark (`make llm-benchmark`, local Ollama) | harness ready; **no valid run yet** |
 
-An [engineering audit](docs/audit/AUDIT-REPORT.md) of the merged release found and fixed 20 issues
+An [engineering audit](docs/audit/AUDIT-REPORT.md) of the merged release found and fixed 21 issues
 (including a model-artifact code-execution path and a rate-limit bypass), each with a regression test,
 and documents what remains open. Details and commands: [docs/results/test-report.md](docs/results/test-report.md).
 

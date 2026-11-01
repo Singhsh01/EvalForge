@@ -6,8 +6,8 @@ by the command next to it. Nothing is estimated.
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests on SQLite | `cd backend && uv run pytest` | **97 passed**, 0 failed, 0 skipped (172 s) |
-| Backend tests on PostgreSQL 16 | `EVALFORGE_TEST_DATABASE_URL=postgresql+psycopg://…/evalforge_test uv run pytest` | **97 passed**, 0 failed, 0 skipped (183 s) |
+| Backend tests on SQLite | `cd backend && uv run pytest` | **98 passed**, 0 failed, 0 skipped (172 s) |
+| Backend tests on PostgreSQL 16 | `EVALFORGE_TEST_DATABASE_URL=postgresql+psycopg://…/evalforge_test uv run pytest` | **98 passed**, 0 failed, 0 skipped (183 s) |
 | Lint / format / static security | `ruff check` · `ruff format --check` · `bandit` | pass · 72 files formatted · no findings |
 | Migration drift (ORM vs migrations 0001–0005) | CI script, on SQLite and PostgreSQL | in sync on both |
 | Frontend type check / component tests / build | `npx tsc --noEmit` · `npm test` · `npm run build` | pass · **24 passed** · pass (19 routes) |
@@ -17,7 +17,7 @@ by the command next to it. Nothing is estimated.
 | Enterprise case studies through the API | `make demo-enterprise` | pass; same point results as before the audit |
 
 Previous release (`feature/enterprise-ai-operations`): 55/55 backend tests on both databases, no
-component tests, smoke e2e only. The audit added 42 backend tests (security, Copilot robustness,
+component tests, smoke e2e only. The audit added 43 backend tests (security, Copilot robustness,
 resilience, statistics, benchmark harness), 24 component tests and the operations e2e. See
 [the audit report](../audit/AUDIT-REPORT.md).
 

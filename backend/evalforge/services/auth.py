@@ -25,6 +25,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from evalforge.config import get_settings
@@ -167,8 +168,15 @@ def current_principal(request: Request, db: Session = Depends(get_db)) -> Princi
     if bucket is not None:
         throttle(f"{bucket[0]}:{tok.user.id}", bucket[1])
     if tok.last_used_at is None or now - _aware(tok.last_used_at) > timedelta(minutes=1):
+        # Best-effort bookkeeping: a busy database must not turn a read into a 500.
         tok.last_used_at = now
-        db.commit()
+        try:
+            db.commit()
+        except OperationalError:
+            db.rollback()
+            log.warning("could not record token use (database busy); continuing")
+            tok = db.scalar(select(ApiToken).where(ApiToken.id == tok.id))
+            assert tok is not None
     p = Principal(tok.user.id, tok.user.username, tok.user.role)
     request.state.principal = p
     return p

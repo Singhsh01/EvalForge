@@ -103,6 +103,7 @@ class ToolRunner:
         self.calls: list[dict[str, Any]] = []
         self.evidence: set[str] = set()
         self.outputs: list[str] = []  # serialized tool results, for numeric claim checks
+        self.usage = {"input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0, "llm_calls": 0}
         self.t0 = time.monotonic()
         self.max_steps = min(int(cfg.get("max_steps", 12)), get_settings().copilot_max_steps)
         self.timeout = min(
@@ -685,6 +686,10 @@ def llm_plan(t: ToolRunner, question: str, model_ref: str) -> Report:
     history: list[str] = [f"QUESTION: {question}", f"TOOLS: {json.dumps(catalogue)}"]
     for _ in range(t.max_steps + 1):
         resp = complete(model_ref, LLM_SYSTEM, "\n".join(history)[-24000:], max_tokens=1200)
+        t.usage["llm_calls"] += 1
+        t.usage["input_tokens"] += resp.input_tokens
+        t.usage["output_tokens"] += resp.output_tokens
+        t.usage["cost_usd"] += resp.cost_usd or 0.0
         m = re.search(r"\{.*\}", resp.text, re.S)
         try:
             msg = json.loads(m.group(0) if m else resp.text)
@@ -912,6 +917,7 @@ def run_agent(
         "duration_ms": duration,
         "trace_id": trace_id,
         "error": error,
+        "usage": dict(runner.usage),
     }
 
 
