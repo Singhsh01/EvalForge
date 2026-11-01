@@ -192,6 +192,10 @@ def _promote(db: Session, approval: Approval, actor: Principal) -> dict[str, Any
             },
         )
     )
+    if approval.payload.get("pipeline_run_id"):
+        from evalforge.services.pipelines import on_promotion_executed
+
+        on_promotion_executed(db, approval.payload["pipeline_run_id"])
     return {
         "champion": f"{mv.name}@{CHAMPION} -> v{mv.version}",
         "previous_champion_version": previous.version if previous else None,

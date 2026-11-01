@@ -241,6 +241,8 @@ def run_evaluation(job_id: str) -> dict[str, Any]:
 
 
 def mark_failed(job_id: str, error: str) -> None:
+    from evalforge.models import EvalRun, PipelineRun
+
     with session_scope() as db:
         run = db.query(TrainingRun).filter_by(job_id=job_id).one_or_none()
         if run is not None:
@@ -248,3 +250,9 @@ def mark_failed(job_id: str, error: str) -> None:
         ev = db.query(Evaluation).filter_by(job_id=job_id).one_or_none()
         if ev is not None:
             ev.status, ev.error = JobStatus.failed, error
+        pr = db.query(PipelineRun).filter_by(job_id=job_id).one_or_none()
+        if pr is not None and pr.status not in ("succeeded", "awaiting_approval"):
+            pr.status, pr.error, pr.finished_at = "failed", error, datetime.now(UTC)
+        er = db.query(EvalRun).filter_by(job_id=job_id).one_or_none()
+        if er is not None:
+            er.status, er.error, er.finished_at = "failed", error, datetime.now(UTC)

@@ -38,7 +38,14 @@ def execute(job_id: str) -> None:
         job.attempts += 1
         kind = job.kind
     try:
-        handler = {JobKind.train: training.run_training, JobKind.evaluate: training.run_evaluation}
+        from evalforge.services import evals, pipelines
+
+        handler = {
+            JobKind.train: training.run_training,
+            JobKind.evaluate: training.run_evaluation,
+            JobKind.pipeline: pipelines.execute_run,
+            JobKind.eval_suite: evals.execute_run,
+        }
         result = handler[kind](job_id)
         with session_scope() as db:
             job = db.get(Job, job_id)

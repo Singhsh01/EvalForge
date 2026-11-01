@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import threading
 import time
 import uuid
 from collections.abc import AsyncIterator
@@ -15,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from evalforge import __version__
-from evalforge.api import auth, datasets, ops, runs, system
+from evalforge.api import auth, datasets, ops, pipelines, runs, system
 from evalforge.config import get_settings
 from evalforge.migrations import upgrade_to_head
 from evalforge.services import jobs
@@ -30,10 +31,28 @@ log = logging.getLogger("evalforge")
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     upgrade_to_head()
     ensure_bootstrap_users()
+    stop = threading.Event()
+    if get_settings().scheduler_enabled and get_settings().executor != "sync":
+        threading.Thread(
+            target=_scheduler_loop, args=(stop,), daemon=True, name="evalforge-scheduler"
+        ).start()
     n = jobs.recover_orphans()
     if n:
         log.warning("marked %d interrupted job(s) as failed", n)
     yield
+    stop.set()
+
+
+def _scheduler_loop(stop: threading.Event) -> None:
+    from evalforge.services.pipelines import run_due_schedules
+
+    while not stop.wait(get_settings().scheduler_interval_seconds):
+        try:
+            started = run_due_schedules()
+            if started:
+                log.info("scheduler started pipeline runs %s", started)
+        except Exception:  # keep the loop alive; failures are logged
+            log.exception("scheduler tick failed")
 
 
 def create_app() -> FastAPI:
@@ -87,6 +106,7 @@ def create_app() -> FastAPI:
     app.include_router(system.router)
     app.include_router(auth.router)
     app.include_router(ops.router)
+    app.include_router(pipelines.router)
     app.include_router(datasets.router)
     app.include_router(runs.router)
     return app

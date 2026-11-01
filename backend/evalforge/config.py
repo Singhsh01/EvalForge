@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 60.0
     copilot_llm_model: str | None = None  # e.g. "anthropic:claude-sonnet-4-5"; None = rules planner
 
+    scheduler_enabled: bool = True
+    scheduler_interval_seconds: float = 30.0
+
     # --- Observability --------------------------------------------------------------
     tracing_enabled: bool = True
     otlp_endpoint: str | None = None  # e.g. http://otel-collector:4318
