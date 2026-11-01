@@ -91,7 +91,9 @@ jobs:
         working-directory: backend
         run: |
           uv sync --frozen --python 3.12
-          EVALFORGE_DATA_DIR=$RUNNER_TEMP/ef nohup uv run uvicorn evalforge.main:app --port 8000 > $RUNNER_TEMP/api.log 2>&1 &
+          # Demo + smoke + operations e2e sign in ~8 times from one IP within a minute; the
+          # production default (10/min per IP) is kept tight, so CI raises it explicitly.
+          EVALFORGE_RATE_LIMIT_LOGIN_PER_MIN=60 EVALFORGE_DATA_DIR=$RUNNER_TEMP/ef nohup uv run uvicorn evalforge.main:app --port 8000 > $RUNNER_TEMP/api.log 2>&1 &
           for i in $(seq 1 60); do curl -sf localhost:8000/api/health/ready && break; sleep 2; done
       - name: Case studies end to end (pipelines, approvals, canary, drift, retraining, agent eval)
         working-directory: backend
